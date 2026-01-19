@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    container_name: restaurant_db
+    environment:
+      POSTGRES_USER: restaurant
+      POSTGRES_PASSWORD: restaurant_pw
+      POSTGRES_DB: restaurant_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - restaurant_db_data:/var/lib/postgresql/data
+
+volumes:
+  restaurant_db_data:
