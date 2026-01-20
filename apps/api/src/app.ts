@@ -6,10 +6,17 @@ import menuRoutes from "./routes/menu.routes";
 import ordersRoutes from "./routes/orders.routes";
 import authRoutes from "./routes/auth.routes";
 import shiftRoutes from "./routes/shifts.routes";
-
+import cors from "cors";
 // Create a new Express application
 // This 'app' object represents our backend API
 const app = express();
+
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
+    credentials: true,
+  })
+);
 
 // ---------------- MIDDLEWARE ----------------
 
@@ -33,6 +40,20 @@ app.get("/", (req, res) => {
 });
 
 app.use("/shifts", shiftRoutes);
+
+// Choose a port number for the backend server
+// If PORT exists in .env, use it, otherwise default to 3000
+const PORT = Number(process.env.PORT) || 3000;
+
+// Start the server and listen for requests on the PORT
+app.listen(PORT, () => {
+  // This message prints in terminal when server starts successfully
+  console.log(`API server running at http://localhost:${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/health`);
+  console.log(`Menu check: http://localhost:${PORT}/menu`);
+});
+
+
 
 // Export the app so other files (like server.ts) can use it
 export default app;
