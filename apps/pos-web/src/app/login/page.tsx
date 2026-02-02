@@ -1,14 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import LoginForm from "@/components/LoginForm";
 import "./login.css";
 import { motion } from "framer-motion";
+
+import EmployeeLoginForm from "@/components/auth/EmployeeLoginForm";
+import AdminLoginForm from "@/components/auth/AdminLoginForm";
 
 export default function LoginPage() {
   return (
     <main className="shell">
-      {/* LEFT SIDE */}
+      {/* LEFT SIDE = EMPLOYEE */}
       <section className="left">
         <motion.div
           className="brandRow"
@@ -34,7 +36,7 @@ export default function LoginPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, delay: 0.05 }}
         >
-          Bombay to Mumbai POS
+          Employee Login
         </motion.h1>
 
         <motion.p
@@ -43,10 +45,10 @@ export default function LoginPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, delay: 0.1 }}
         >
-          Staff login for POS + secure admin dashboard — built for Indian & Hakka service.
+          Enter your PIN to start taking orders.
         </motion.p>
 
-        {/* Card animation */}
+        {/* Employee card */}
         <motion.div
           className="card"
           initial={{ opacity: 0, y: 20, scale: 0.98 }}
@@ -54,7 +56,7 @@ export default function LoginPage() {
           transition={{ duration: 0.55, delay: 0.15 }}
           whileHover={{ y: -2 }}
         >
-          <LoginForm />
+          <EmployeeLoginForm />
         </motion.div>
 
         <motion.p
@@ -67,7 +69,7 @@ export default function LoginPage() {
         </motion.p>
       </section>
 
-      {/* RIGHT SIDE */}
+      {/* RIGHT SIDE = ADMIN */}
       <section className="right">
         <Image src="/branding/hero.jpg" alt="Food" fill priority className="heroImg" />
 
@@ -77,15 +79,21 @@ export default function LoginPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <div className="heroBadge">BOMBAY TO MUMBAI</div>
-          <h2 className="heroTitle">Fast ordering. Smooth service.</h2>
+          <div className="heroBadge">ADMIN ACCESS</div>
+          <h2 className="heroTitle">Admin Login</h2>
           <p className="heroText">
-            Built for high-energy kitchens — quick PIN sign-in, clean order flow, and secure admin tools.
+            Restricted access for managers & administrators. Use your email and password.
           </p>
+
+          {/* Admin form card inside the hero */}
+          <div className="adminCardWrap">
+            <AdminLoginForm />
+          </div>
+
           <div className="chips">
-            <span className="chip">POS Mode</span>
-            <span className="chip">Admin Mode</span>
-            <span className="chip">Online Ordering (later)</span>
+            <span className="chip">Reports</span>
+            <span className="chip">Menu Control</span>
+            <span className="chip">Staff Access</span>
           </div>
         </motion.div>
       </section>
