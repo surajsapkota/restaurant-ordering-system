@@ -1,15 +1,24 @@
-// Import the Express app we created in app.ts
+import http from "http";
+import { Server } from "socket.io";
 import app from "./app";
 
-// Choose a port number for the backend server
-// If PORT exists in .env, use it, otherwise default to 3000
 const PORT = Number(process.env.PORT) || 3000;
 
-// Start the server and listen for requests on the PORT
-app.listen(PORT, () => {
-  // This message prints in terminal when server starts successfully
+const httpServer = http.createServer(app);
+
+export const io = new Server(httpServer, {
+  cors: {
+    origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
+    credentials: true,
+  },
+});
+
+io.on("connection", (socket) => {
+  console.log("Socket connected:", socket.id);
+});
+
+httpServer.listen(PORT, () => {
   console.log(`API server running at http://localhost:${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/health`);
   console.log(`Menu check: http://localhost:${PORT}/menu`);
 });
-

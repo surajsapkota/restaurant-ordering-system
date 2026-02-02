@@ -6,6 +6,7 @@ import menuRoutes from "./routes/menu.routes";
 import ordersRoutes from "./routes/orders.routes";
 import authRoutes from "./routes/auth.routes";
 import shiftRoutes from "./routes/shifts.routes";
+import tablesRouter from "./routes/tables.routes";
 import cors from "cors";
 // Create a new Express application
 // This 'app' object represents our backend API
@@ -28,6 +29,9 @@ app.use("/menu", menuRoutes);
 // Any request that starts with /orders will go to ordersRoutes
 app.use("/orders", ordersRoutes);
 
+app.use("/tables", tablesRouter);
+
+
 app.use("/auth", authRoutes);
 // This is a simple test route to check if server is alive
 // If we open http://localhost:3000/health
@@ -40,20 +44,6 @@ app.get("/", (req, res) => {
 });
 
 app.use("/shifts", shiftRoutes);
-
-// Choose a port number for the backend server
-// If PORT exists in .env, use it, otherwise default to 3000
-const PORT = Number(process.env.PORT) || 3000;
-
-// Start the server and listen for requests on the PORT
-app.listen(PORT, () => {
-  // This message prints in terminal when server starts successfully
-  console.log(`API server running at http://localhost:${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-  console.log(`Menu check: http://localhost:${PORT}/menu`);
-});
-
-
 
 // Export the app so other files (like server.ts) can use it
 export default app;

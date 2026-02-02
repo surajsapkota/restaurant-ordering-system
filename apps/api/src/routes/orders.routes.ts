@@ -1,6 +1,6 @@
 // src/routes/orders.routes.ts
 
-import { Router, Request, Response } from "express";
+import { Router, Response } from "express";
 import prisma from "../db/prisma";
 import { OrderStatus, OrderType, PaymentMethod, PaymentStatus } from "@prisma/client";
 import { requireAuth } from "../middleware/requireAuth";
@@ -10,7 +10,7 @@ const router = Router();
 const TAX_RATE = 0.13;
 const dollarsToCents = (d: number) => Math.round(d * 100);
 
-//Helper: recompute totals after item void (optional but good)
+// Recompute totals after voiding items
 async function recomputeOrderTotals(orderId: string) {
   const items = await prisma.orderItem.findMany({
     where: { orderId },
@@ -74,8 +74,16 @@ router.get("/", requireAuth, async (req: any, res: Response) => {
 });
 
 /**
- * ✅ POST /orders
- * Protected. Create a new order inside an OPEN shift.
+ * POST /orders
+ * Protected. Creates a new order inside an OPEN shift (same terminal).
+ *
+ * Body example:
+ * {
+ *   "type": "DINE_IN",
+ *   "tableNumber": "9",
+ *   "terminalCode": "TABLET-1",
+ *   "items": [{ "menuItemId": "...", "qty": 2, "notes": "no onion" }]
+ * }
  */
 router.post("/", requireAuth, async (req: any, res: Response) => {
   try {
@@ -87,7 +95,6 @@ router.post("/", requireAuth, async (req: any, res: Response) => {
       deliveryAddr,
       tipDollars,
       items,
-      shiftId,
       terminalCode,
     } = req.body;
 
@@ -96,20 +103,29 @@ router.post("/", requireAuth, async (req: any, res: Response) => {
       return res.status(400).json({ error: "type is required (DINE_IN, TAKEOUT, DELIVERY)" });
     }
 
-    if (!shiftId || typeof shiftId !== "string") {
-      return res.status(400).json({ error: "shiftId is required" });
+    const validTypes = Object.values(OrderType);
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ error: `Invalid type. Allowed: ${validTypes.join(", ")}` });
     }
 
-    const shift = await prisma.shift.findUnique({ where: { id: shiftId } });
-    if (!shift) return res.status(404).json({ error: "Shift not found" });
-    if (shift.status !== "OPEN") return res.status(400).json({ error: "Shift is not OPEN" });
-
-    if (!terminalCode) {
+    if (!terminalCode || typeof terminalCode !== "string") {
       return res.status(400).json({ error: "terminalCode is required (ex: TABLET-1)" });
     }
 
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: "items must be a non-empty array" });
+    }
+
+    // ---- find OPEN shift for this terminal ----
+    const shift = await prisma.shift.findFirst({
+      where: { status: "OPEN", terminalCode },
+      orderBy: { openedAt: "desc" }, // Shift model has openedAt
+    });
+
+    if (!shift) {
+      return res.status(400).json({
+        error: "No OPEN shift for this terminal. Please open a shift first.",
+      });
     }
 
     // ---- fetch menu items ----
@@ -144,7 +160,7 @@ router.post("/", requireAuth, async (req: any, res: Response) => {
     const taxCents = Math.round(subtotalCents * TAX_RATE);
     const totalCents = subtotalCents + taxCents + tipCents;
 
-    // ---- create order + items in one transaction ----
+    // ---- create order + items (transaction) ----
     const createdOrder = await prisma.$transaction(async (tx) => {
       const lastOrder = await tx.order.findFirst({
         orderBy: { orderNumber: "desc" },
@@ -156,7 +172,7 @@ router.post("/", requireAuth, async (req: any, res: Response) => {
       const order = await tx.order.create({
         data: {
           orderNumber: nextOrderNumber,
-          type,
+          type: type as OrderType,
           tableNumber: tableNumber ?? null,
           customerName: customerName ?? null,
           customerPhone: customerPhone ?? null,
@@ -167,10 +183,9 @@ router.post("/", requireAuth, async (req: any, res: Response) => {
           tipCents,
           totalCents,
 
-          shiftId,
+          shiftId: shift.id,
           terminalCode,
 
-          // REAL logged-in employee
           createdById: req.user.id,
         },
       });
@@ -186,7 +201,7 @@ router.post("/", requireAuth, async (req: any, res: Response) => {
             nameSnapshot: menuItem.name,
             basePriceCents: menuItem.priceCents,
             qty,
-            notes: it.notes ?? null,
+            notes: typeof it.notes === "string" && it.notes.trim() ? it.notes.trim() : null,
           },
         });
       }
@@ -238,7 +253,6 @@ router.patch("/:id/status", requireAuth, async (req: any, res: Response) => {
 
 /**
  * POST /orders/:id/void
- * Cancels whole order + logs who voided it
  */
 router.post("/:id/void", requireAuth, async (req: any, res: Response) => {
   try {
@@ -263,7 +277,6 @@ router.post("/:id/void", requireAuth, async (req: any, res: Response) => {
           orderId,
           orderItemId: null,
           reason,
-          // REAL logged-in employee
           voidedById: req.user.id,
         },
       });
@@ -288,8 +301,7 @@ router.post("/:id/void", requireAuth, async (req: any, res: Response) => {
 });
 
 /**
- * ✅ POST /orders/:id/items/:orderItemId/void
- * Voids one item + logs who voided it + recalculates totals
+ * POST /orders/:id/items/:orderItemId/void
  */
 router.post("/:id/items/:orderItemId/void", requireAuth, async (req: any, res: Response) => {
   try {
@@ -316,7 +328,6 @@ router.post("/:id/items/:orderItemId/void", requireAuth, async (req: any, res: R
           orderId,
           orderItemId,
           reason,
-          // REAL logged-in employee
           voidedById: req.user.id,
         },
       });
@@ -346,7 +357,6 @@ router.post("/:id/items/:orderItemId/void", requireAuth, async (req: any, res: R
 
 /**
  * PATCH /orders/:id/payment
- * Mark order as paid (CASH/CARD)
  */
 router.patch("/:id/payment", requireAuth, async (req: any, res: Response) => {
   try {
@@ -373,6 +383,24 @@ router.patch("/:id/payment", requireAuth, async (req: any, res: Response) => {
   } catch (error) {
     console.error("PATCH /orders/:id/payment failed:", error);
     return res.status(500).json({ error: "Failed to update payment" });
+  }
+});
+
+/**
+ * GET /orders/active/summary
+ */
+router.get("/active/summary", requireAuth, async (req: any, res: Response) => {
+  try {
+    const [newCount, kitchen, ready] = await Promise.all([
+      prisma.order.count({ where: { status: OrderStatus.NEW } }),
+      prisma.order.count({ where: { status: OrderStatus.IN_KITCHEN } }),
+      prisma.order.count({ where: { status: OrderStatus.READY } }),
+    ]);
+
+    return res.status(200).json({ open: newCount, kitchen, ready });
+  } catch (error) {
+    console.error("GET /orders/active/summary failed:", error);
+    return res.status(500).json({ error: "Failed to load active orders summary" });
   }
 });
 
