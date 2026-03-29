@@ -17,7 +17,12 @@ const app = express();
 
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "https://restaurant-ordering-system-drab.vercel.app",
+      "https://restaurant-ordering-system-8z6z6i61i-surajsapkotas-projects.vercel.app",
+    ],
     credentials: true,
   })
 );
