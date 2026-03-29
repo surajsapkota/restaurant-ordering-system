@@ -77,5 +77,127 @@ router.get("/me", requireAuth, async (req: any, res) => {
     return res.json({ user });
   });
   
+  router.post("/employee-login", async (req, res) => {
+    try {
+      const { employeeCode, pin } = req.body as {
+        employeeCode?: string;
+        pin?: string;
+      };
+  
+      if (!employeeCode || !pin) {
+        return res.status(400).json({
+          error: "employeeCode and pin are required",
+        });
+      }
+  
+      const user = await prisma.user.findFirst({
+        where: {
+          employeeCode,
+          isActive: true,
+        },
+      });
+  
+      if (!user || !user.pinHash) {
+        return res.status(401).json({
+          error: "Invalid employee code or PIN",
+        });
+      }
+  
+      const ok = await verifySecret(pin, user.pinHash);
+  
+      if (!ok) {
+        return res.status(401).json({
+          error: "Invalid employee code or PIN",
+        });
+      }
+  
+      const token = signToken({ userId: user.id, role: user.role });
+  
+      const activeShift = await prisma.storeShift.findFirst({
+        where: { status: "OPEN" },
+        orderBy: { openedAt: "desc" },
+        select: {
+          id: true,
+          status: true,
+          businessDate: true,
+          terminalCode: true,
+          openedAt: true,
+          openedById: true,
+        },
+      });
+  
+      const employeeSession = await prisma.employeeSession.create({
+        data: {
+          employeeId: user.id,
+          storeShiftId: activeShift?.id ?? null,
+        },
+        select: {
+          id: true,
+          loginAt: true,
+          storeShiftId: true,
+        },
+      });
+  
+      return res.json({
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          role: user.role,
+          employeeCode: user.employeeCode,
+        },
+        employeeSession,
+        activeShift,
+      });
+    } catch (error) {
+      console.error("POST /auth/employee-login failed:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
 
+// POST /auth/logout
+router.post("/logout", requireAuth, async (req: any, res) => {
+  try {
+    // Find the latest open session for this employee
+    const session = await prisma.employeeSession.findFirst({
+      where: {
+        employeeId: req.user.id,
+        logoutAt: null, // still open
+      },
+      orderBy: { loginAt: "desc" },
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: "No active session found" });
+    }
+
+    const logoutAt = new Date();
+    const workedMinutes = Math.round(
+      (logoutAt.getTime() - session.loginAt.getTime()) / 1000 / 60
+    );
+
+    const updated = await prisma.employeeSession.update({
+      where: { id: session.id },
+      data: { logoutAt, breakMinutes: 0 },
+      select: {
+        id: true,
+        loginAt: true,
+        logoutAt: true,
+        breakMinutes: true,
+        storeShiftId: true,
+      },
+    });
+
+    return res.json({
+      message: "Logged out successfully",
+      session: {
+        ...updated,
+        workedMinutes,
+      },
+    });
+  } catch (error) {
+    console.error("POST /auth/logout failed:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
 export default router;

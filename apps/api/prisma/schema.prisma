@@ -8,6 +8,7 @@ datasource db {
 
 enum UserRole {
   EMPLOYEE
+  MANAGER
   CUSTOMER
   ADMIN
 }
@@ -48,6 +49,7 @@ model User {
   phone        String?
   passwordHash String?
   pinHash      String?
+  employeeCode String? @unique
 
   role     UserRole @default(EMPLOYEE)
   isActive Boolean  @default(true)
@@ -55,35 +57,35 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
-  createdOrders Order[]     @relation("CreatedOrders")
-  voidLogs      VoidLog[]
-  shifts        Shift[]
-  tableLocks    TableLock[] @relation("UserTableLocks")
+  createdOrders     Order[]           @relation("CreatedOrders")
+  voidLogs          VoidLog[]
+  openedStoreShifts StoreShift[]      @relation("OpenedStoreShifts")
+  closedStoreShifts StoreShift[]      @relation("ClosedStoreShifts")
+  employeeSessions  EmployeeSession[]
+  tableLocks        TableLock[]       @relation("UserTableLocks")
 
   @@index([role])
   @@index([isActive])
 }
 
-model Shift {
+model StoreShift {
   id     String      @id @default(cuid())
   status ShiftStatus @default(OPEN)
 
-  // who is working this shift
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  // which tablet/register (simple string for now)
+  businessDate DateTime
   terminalCode String
 
-  openedAt DateTime  @default(now())
-  closedAt DateTime?
+  openedAt   DateTime @default(now())
+  openedById String
+  openedBy   User     @relation("OpenedStoreShifts", fields: [openedById], references: [id])
 
-  // optional cash tracking
+  closedAt   DateTime?
+  closedById String?
+  closedBy   User?     @relation("ClosedStoreShifts", fields: [closedById], references: [id])
+
   openingCashCents Int  @default(0)
   closingCashCents Int?
 
-  // snapshot totals saved at close (so reports are fast later)
   grossSalesCents Int @default(0)
   discountCents   Int @default(0)
   voidedCents     Int @default(0)
@@ -95,12 +97,39 @@ model Shift {
   cardSalesCents Int @default(0)
   orderCount     Int @default(0)
 
-  // link orders to this shift
-  orders Order[]
+  notes   String?
+  pdfPath String?
 
-  @@index([openedAt])
+  orders           Order[]
+  employeeSessions EmployeeSession[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([status])
-  @@index([userId])
+  @@index([businessDate])
+  @@index([openedById])
+}
+
+model EmployeeSession {
+  id           String  @id @default(cuid())
+  employeeId   String
+  storeShiftId String?
+
+  loginAt      DateTime  @default(now())
+  logoutAt     DateTime?
+  breakMinutes Int       @default(0)
+  notes        String?
+
+  employee   User        @relation(fields: [employeeId], references: [id])
+  storeShift StoreShift? @relation(fields: [storeShiftId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([employeeId])
+  @@index([storeShiftId])
+  @@index([loginAt])
 }
 
 model MenuCategory {
@@ -147,6 +176,7 @@ model Order {
   taxCents      Int @default(0)
   tipCents      Int @default(0)
   totalCents    Int @default(0)
+  payments Payment[]
 
   paymentStatus PaymentStatus  @default(UNPAID)
   paymentMethod PaymentMethod?
@@ -166,16 +196,30 @@ model Order {
   // NEW: discount per order
   discountCents Int @default(0)
 
-  // NEW: link order to a shift
-  shiftId String?
-  shift   Shift?  @relation(fields: [shiftId], references: [id])
+  storeShiftId String?
+  storeShift   StoreShift? @relation(fields: [storeShiftId], references: [id])
 
   // helpful for tracking which tablet created the order
   terminalCode String?
 
   @@index([status])
   @@index([createdAt])
-  @@index([shiftId])
+  @@index([storeShiftId])
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id])
+
+  method      PaymentMethod
+  amountCents Int
+
+  // optional for cash
+  amountReceivedCents Int?
+  changeGivenCents    Int?
+
+  createdAt DateTime @default(now())
 }
 
 model OrderItem {

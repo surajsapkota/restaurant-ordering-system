@@ -1,13 +1,15 @@
+// apps/api/src/routes/tables.routes.ts
+
 import { Router, Response } from "express";
 import prisma from "../db/prisma";
 import { OrderStatus, OrderType, PaymentStatus } from "@prisma/client";
 import { requireAuth } from "../middleware/requireAuth";
 import { io } from "../server";
 
-
 const router = Router();
 
-// lock expiry (seconds) — you can change later
+// How long a table lock should live (seconds)
+// We refresh it while employee is on the table screen
 const LOCK_TTL_SECONDS = 120;
 
 function nowPlusSeconds(sec: number) {
@@ -15,25 +17,34 @@ function nowPlusSeconds(sec: number) {
 }
 
 /**
- * GET /tables/status?count=30
- * Returns status for tables 1..count (available / occupied / needs_payment / locked)
+ * GET /tables/status?count=60
+ * Returns status for table 1..count:
+ *  - available
+ *  - occupied (has an open dine-in order)
+ *  - needs_payment (READY + UNPAID)
+ *  - locked (another employee is working on it)
  */
 router.get("/status", requireAuth, async (req: any, res: Response) => {
   try {
     const count = Math.max(1, Math.min(Number(req.query.count ?? 30), 300));
 
-    // Cleanup expired locks
+    // 1) Clean up expired locks so UI doesn’t get stuck
     await prisma.tableLock.deleteMany({
       where: { expiresAt: { lt: new Date() } },
     });
 
-    // Active dine-in orders (not closed/cancelled)
+    // 2) Get all active dine-in orders (NOT closed/cancelled)
+    // IMPORTANT:
+    // DO NOT filter paymentStatus here.
+    // If you filter UNPAID only, some “active” tables disappear and UI becomes inconsistent.
     const activeOrders = await prisma.order.findMany({
       where: {
         type: OrderType.DINE_IN,
         tableNumber: { not: null },
         status: { in: [OrderStatus.NEW, OrderStatus.IN_KITCHEN, OrderStatus.READY] },
       },
+      // newest first so we can pick the most recent order per table
+      orderBy: { createdAt: "desc" },
       select: {
         id: true,
         tableNumber: true,
@@ -42,7 +53,7 @@ router.get("/status", requireAuth, async (req: any, res: Response) => {
       },
     });
 
-    // Locks (not expired)
+    // 3) Get current locks (not expired)
     const locks = await prisma.tableLock.findMany({
       where: { expiresAt: { gt: new Date() } },
       select: {
@@ -53,50 +64,62 @@ router.get("/status", requireAuth, async (req: any, res: Response) => {
       },
     });
 
-    // Build maps
+    // 4) Map latest order per table
+    // Since activeOrders is newest -> oldest, the first one we see for a table is “the current one”
     const orderByTable = new Map<number, typeof activeOrders[number]>();
     for (const o of activeOrders) {
       const t = Number(o.tableNumber);
       if (!Number.isFinite(t)) continue;
 
-      // if multiple, prefer needs_payment
-      const existing = orderByTable.get(t);
-      if (!existing) orderByTable.set(t, o);
-      else {
-        const existingNeedsPay =
-          existing.status === "READY" && existing.paymentStatus === PaymentStatus.UNPAID;
-        const currentNeedsPay =
-          o.status === "READY" && o.paymentStatus === PaymentStatus.UNPAID;
-
-        if (!existingNeedsPay && currentNeedsPay) orderByTable.set(t, o);
-      }
+      if (!orderByTable.has(t)) orderByTable.set(t, o);
     }
 
+    // 5) Map lock per table
     const lockByTable = new Map<number, typeof locks[number]>();
     for (const l of locks) lockByTable.set(l.tableNumber, l);
 
+    // 6) Build response for 1..count
     const tables = Array.from({ length: count }, (_, i) => i + 1).map((tableNo) => {
       const lock = lockByTable.get(tableNo);
+      const order = orderByTable.get(tableNo);
+    
+      // ✅ LOCKED (highest priority)
       if (lock) {
         return {
           tableNumber: tableNo,
           status: "locked" as const,
+          orderId: order?.id ?? null, // ✅ IMPORTANT
           lockedById: lock.lockedById,
           lockedByName: lock.lockedBy?.name ?? null,
           lockedByMe: lock.lockedById === req.user.id,
           lockExpiresAt: lock.expiresAt,
         };
       }
-
-      const order = orderByTable.get(tableNo);
-      if (!order) return { tableNumber: tableNo, status: "available" as const };
-
-      const needsPayment = order.status === "READY" && order.paymentStatus === "UNPAID";
-      if (needsPayment) {
-        return { tableNumber: tableNo, status: "needs_payment" as const, orderId: order.id };
+    
+      // ✅ NO ORDER = available
+      if (!order) {
+        return { tableNumber: tableNo, status: "available" as const };
       }
-
-      return { tableNumber: tableNo, status: "occupied" as const, orderId: order.id };
+    
+      // ✅ NEEDS PAYMENT
+      const needsPayment =
+        order.status === OrderStatus.READY &&
+        order.paymentStatus === PaymentStatus.UNPAID;
+    
+      if (needsPayment) {
+        return {
+          tableNumber: tableNo,
+          status: "needs_payment" as const,
+          orderId: order.id,
+        };
+      }
+    
+      // ✅ OCCUPIED
+      return {
+        tableNumber: tableNo,
+        status: "occupied" as const,
+        orderId: order.id,
+      };
     });
 
     return res.status(200).json({ count, tables });
@@ -108,7 +131,8 @@ router.get("/status", requireAuth, async (req: any, res: Response) => {
 
 /**
  * POST /tables/:tableNumber/lock
- * Locks table for this user (prevents other employees)
+ * Locks a table for the current user.
+ * If someone else has it locked, returns 409.
  */
 router.post("/:tableNumber/lock", requireAuth, async (req: any, res: Response) => {
   try {
@@ -117,7 +141,7 @@ router.post("/:tableNumber/lock", requireAuth, async (req: any, res: Response) =
       return res.status(400).json({ error: "Invalid tableNumber" });
     }
 
-    // cleanup expired locks
+    // Clean expired locks first
     await prisma.tableLock.deleteMany({
       where: { expiresAt: { lt: new Date() } },
     });
@@ -131,6 +155,7 @@ router.post("/:tableNumber/lock", requireAuth, async (req: any, res: Response) =
       return res.status(409).json({ error: "Table is locked by another employee" });
     }
 
+    // Upsert = create if not exists, otherwise refresh it
     const lock = await prisma.tableLock.upsert({
       where: { tableNumber },
       create: {
@@ -144,6 +169,8 @@ router.post("/:tableNumber/lock", requireAuth, async (req: any, res: Response) =
       },
       select: { tableNumber: true, lockedById: true, expiresAt: true },
     });
+
+    // Tell all tablets “tables changed” so UI refreshes immediately
     io.emit("tables:changed");
 
     return res.status(200).json({ lock });
@@ -155,7 +182,8 @@ router.post("/:tableNumber/lock", requireAuth, async (req: any, res: Response) =
 
 /**
  * DELETE /tables/:tableNumber/lock
- * Unlock table (only same user OR admin)
+ * Unlock table.
+ * Allowed: same user who locked OR ADMIN.
  */
 router.delete("/:tableNumber/lock", requireAuth, async (req: any, res: Response) => {
   try {
@@ -187,6 +215,5 @@ router.delete("/:tableNumber/lock", requireAuth, async (req: any, res: Response)
     return res.status(500).json({ error: "Failed to unlock table" });
   }
 });
-
 
 export default router;

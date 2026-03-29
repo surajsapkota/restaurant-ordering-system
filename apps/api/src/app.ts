@@ -8,6 +8,9 @@ import authRoutes from "./routes/auth.routes";
 import shiftRoutes from "./routes/shifts.routes";
 import tablesRouter from "./routes/tables.routes";
 import cors from "cors";
+import employeesRoutes from "./routes/employees.routes";
+
+
 // Create a new Express application
 // This 'app' object represents our backend API
 const app = express();
@@ -44,6 +47,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/shifts", shiftRoutes);
+app.use("/employees", employeesRoutes);
 
 // Export the app so other files (like server.ts) can use it
 export default app;
