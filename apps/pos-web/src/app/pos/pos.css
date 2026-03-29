@@ -141,3 +141,247 @@
   font-weight: 900;
   opacity: 0.85;
 }
+
+/* ===== Manager / Report buttons ===== */
+
+.managerMenuWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.managerBtn,
+.reportBtn {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.15);
+  background: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.managerBtn:hover,
+.reportBtn:hover {
+  border-color: rgba(0,0,0,0.25);
+}
+
+/* ===== Manager dropdown ===== */
+
+.managerMenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  width: 220px;
+  background: white;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,0.12);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+  padding: 8px;
+  z-index: 100;
+}
+
+.managerMenuItem {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.managerMenuItem:hover {
+  background: rgba(0,0,0,0.06);
+}
+
+/* ===== Center Modal ===== */
+.posModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 9999;
+  padding: 18px;
+}
+
+.posModalCard {
+  width: 100%;
+  max-width: 520px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+  padding: 16px;
+}
+
+.posModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.posModalTitle {
+  font-size: 15px;
+  font-weight: 950;
+  color: #111827;
+}
+
+.posModalClose {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+.posModalClose:hover {
+  background: rgba(0,0,0,0.06);
+}
+
+.posModalText {
+  margin: 8px 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(17, 24, 39, 0.75);
+}
+
+.posModalInput {
+  width: 100%;
+  padding: 12px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.18);
+  outline: none;
+  font-weight: 800;
+}
+.posModalInput:focus {
+  border-color: rgba(0,0,0,0.32);
+}
+
+.posModalError {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(220, 38, 38, 0.22);
+  background: rgba(220, 38, 38, 0.06);
+  color: rgba(127, 29, 29, 0.95);
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.posModalActions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.posModalBtnGhost,
+.posModalBtnPrimary {
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 800;
+  border: 1px solid rgba(0,0,0,0.16);
+  background: white;
+}
+
+.posModalBtnPrimary {
+  border: none;
+  background: linear-gradient(135deg, #ffb703, #fb5607, #ff006e);
+  color: #111827;
+  box-shadow: 0 12px 22px rgba(251, 86, 7, 0.18);
+}
+
+.posModalBtnPrimary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.posModalGrid {
+  margin-top: 6px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.posModalTile {
+  text-align: left;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  background: rgba(17, 24, 39, 0.03);
+  cursor: pointer;
+}
+.posModalTile:hover {
+  background: rgba(17, 24, 39, 0.06);
+}
+
+.tileTitle {
+  font-size: 14px;
+  font-weight: 950;
+  color: #111827;
+}
+
+.tileSub {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 750;
+  color: rgba(17, 24, 39, 0.72);
+}
+
+@media (max-width: 560px) {
+  .posModalGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Header buttons: force readable text */
+.managerBtn,
+.reportBtn,
+.logoutBtn {
+  color: #111827;          /* dark text */
+  opacity: 1;              /* in case parent sets opacity */
+  filter: none;            /* in case parent sets filter */
+}
+
+/* If you ever disable them, keep text visible */
+.managerBtn:disabled,
+.reportBtn:disabled {
+  color: rgba(17, 24, 39, 0.45);
+  opacity: 1;
+}
+
+/* Modal buttons: force visible text */
+.posModalBtnGhost,
+.posModalBtnPrimary {
+  color: #111827;
+  opacity: 1;
+}
+
+/* In case global CSS makes disabled text invisible */
+.posModalBtnGhost:disabled,
+.posModalBtnPrimary:disabled {
+  color: rgba(17, 24, 39, 0.5);
+  opacity: 1;
+}
+
+/* Modal input: force text + placeholder visibility */
+.posModalInput {
+  color: #111827;
+  background: #ffffff;
+}
+
+.posModalInput::placeholder {
+  color: rgba(17, 24, 39, 0.35);
+  opacity: 1; /* important: some browsers reduce placeholder opacity */
+}
+
+.posModalGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}

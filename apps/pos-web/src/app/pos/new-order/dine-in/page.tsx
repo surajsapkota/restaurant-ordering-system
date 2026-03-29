@@ -52,26 +52,27 @@ export default function DineInPage() {
   }, [selectedTable]);
 
   async function fetchStatuses() {
-    if (!token) return;
-
+    if (!token) return null;
+  
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/tables/status?count=${TOTAL_TABLES}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
+  
       if (!res.ok) throw new Error("Failed to load table statuses");
-
+  
       const data: TablesStatusResponse = await res.json();
-
+  
       const map: Record<number, TableRow> = {};
       for (const t of data.tables) map[t.tableNumber] = t;
-
+  
       setStatusByTable(map);
+      return map;
     } catch (e) {
-      // keep it quiet unless you want to show it
       const msg = e instanceof Error ? e.message : "Failed to load table statuses";
       setErrorMsg(msg);
+      return null;
     }
   }
 
@@ -164,10 +165,10 @@ export default function DineInPage() {
 
   async function onSelectTable(t: number) {
     setErrorMsg(null);
-
+  
     const row = statusByTable[t];
     const status = row?.status ?? "available";
-
+  
     // Locked by someone else => block
     if (status === "locked" && !row?.lockedByMe) {
       setErrorMsg(
@@ -175,35 +176,64 @@ export default function DineInPage() {
       );
       return;
     }
-
+  
     // Unlock previous table if switching
     if (selectedTable && selectedTable !== t) {
       await unlockTable(selectedTable);
     }
-
-    // Lock chosen table (refresh lock even if it was already locked by me)
+  
+    // Lock chosen table
     const ok = await lockTable(t);
     if (!ok) return;
-
+  
     setSelectedTable(t);
-
-    // optional: refresh statuses once so UI shows "lockedByMe"
-    if (mountedRef.current) fetchStatuses();
-  }
-
-  async function onNext() {
-    if (!selectedTable) return;
-
-    const row = statusByTable[selectedTable];
-    const status = row?.status ?? "available";
-
-    // If occupied / needs payment => open existing order
-    if ((status === "occupied" || status === "needs_payment") && row?.orderId) {
-      router.push(`/pos/orders/${row.orderId}`);
+  
+    // Refresh and use latest data directly
+    const latestMap = await fetchStatuses();
+    const latestRow = latestMap?.[t] ?? row;
+  
+    if (latestRow?.orderId) {
+      router.push(`/pos/orders/new?type=dine-in&table=${t}&guests=${guests}&orderId=${latestRow.orderId}`);
       return;
     }
+  
+    router.push(`/pos/orders/new?type=dine-in&table=${t}&guests=${guests}`);
+  }
 
-    // New order builder
+  // async function onNext() {
+  //   if (!selectedTable) return;
+  
+  //   const row = statusByTable[selectedTable];
+  //   const status = row?.status ?? "available";
+  
+  //   // ✅ If occupied / needs payment => open builder in "add items" mode
+  //   if ((status === "occupied" || status === "needs_payment") && row?.orderId) {
+  //     router.push(
+  //       `/pos/orders/new?type=dine-in&table=${selectedTable}&guests=${guests}&orderId=${row.orderId}`
+  //     );
+  //     return;
+  //   }
+  
+  //   // ✅ brand new table order
+  //   router.push(`/pos/orders/new?type=dine-in&table=${selectedTable}&guests=${guests}`);
+  // }
+  
+  async function onNext() {
+    if (!selectedTable) return;
+  
+    const row = statusByTable[selectedTable];
+  
+    console.log("selectedTable =", selectedTable);
+    console.log("row =", row);
+    console.log("row.orderId =", row?.orderId);
+  
+    if (row?.orderId) {
+      router.push(
+        `/pos/orders/new?type=dine-in&table=${selectedTable}&guests=${guests}&orderId=${row.orderId}`
+      );
+      return;
+    }
+  
     router.push(`/pos/orders/new?type=dine-in&table=${selectedTable}&guests=${guests}`);
   }
 
@@ -302,7 +332,7 @@ export default function DineInPage() {
             })}
           </div>
 
-          <div className="tableFooter">
+          {/* <div className="tableFooter">
             <button
               className={`nextBtn ${!canContinue ? "disabled" : ""}`}
               disabled={!canContinue}
@@ -310,7 +340,7 @@ export default function DineInPage() {
             >
               Next <ArrowRight size={16} />
             </button>
-          </div>
+          </div> */}
         </section>
       </div>
     </main>

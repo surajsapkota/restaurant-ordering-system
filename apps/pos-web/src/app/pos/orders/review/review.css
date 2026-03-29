@@ -1,0 +1,120 @@
+/* Review Page - Force readable colors (so global styles can't wash it out) */
+
+.reviewShell {
+    min-height: calc(100vh - 72px);
+    padding: 32px 16px;
+    color: #111;
+  }
+  
+  .reviewWrap {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  
+  .reviewTitle {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0;
+    color: #111;
+  }
+  
+  .reviewMeta {
+    margin-top: 10px;
+    color: #333;
+    font-size: 14px;
+  }
+  
+  .reviewCard {
+    margin-top: 18px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+  }
+  
+  .reviewRow {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  
+  .reviewRow:last-child {
+    border-bottom: none;
+  }
+  
+  .reviewRowTop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: #111;
+  }
+  
+  .reviewSub {
+    margin-top: 4px;
+    color: #444;
+    font-size: 13px;
+  }
+  
+  .reviewNote {
+    margin-top: 6px;
+    color: #222;
+    font-size: 13px;
+  }
+  
+  .reviewTotals {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0,0,0,0.08);
+  }
+  
+  .reviewTotRow {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    color: #111;
+  }
+  
+  .reviewError {
+    margin-top: 12px;
+    color: #b00020;
+    font-weight: 600;
+  }
+  
+  .reviewActions {
+    margin-top: 18px;
+    display: flex;
+    gap: 12px;
+  }
+  
+  .reviewBtn {
+    height: 44px;
+    padding: 0 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.12);
+    background: white;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  
+  .reviewBtnPrimary {
+    border: none;
+    background: #ffb200;
+    color: #111;
+  }
+  
+  .reviewBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  .reviewWarning {
+    margin: 12px 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-weight: 800;
+    background: rgba(234, 179, 8, 0.15);
+    border: 1px solid rgba(234, 179, 8, 0.5);
+    color: #92400e;
+  }
+  

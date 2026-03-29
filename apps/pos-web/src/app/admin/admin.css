@@ -1,0 +1,1656 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .adminShell {
+    display: flex;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+  }
+  
+  /* ===== SIDEBAR ===== */
+  .adminSidebar {
+    width: 220px;
+    background: linear-gradient(180deg, #1a0a00 0%, #2d1200 60%, #1a0a00 100%);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 16px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  
+  .adminLogoArea {
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 183, 3, 0.2);
+  }
+  
+  .adminLogo {
+    font-size: 13px;
+    font-weight: 900;
+    color: #ffb703;
+    letter-spacing: 0.5px;
+  }
+  
+  .adminLogoSub {
+    font-size: 11px;
+    color: rgba(255, 183, 3, 0.5);
+    margin-top: 3px;
+    font-weight: 700;
+  }
+  
+  .adminNav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+  }
+  
+  .adminNavItem {
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.55);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+  }
+  
+  .adminNavItem:hover {
+    background: rgba(255, 183, 3, 0.1);
+    color: rgba(255, 255, 255, 0.85);
+  }
+  
+  .adminNavItem.active {
+    background: linear-gradient(135deg, rgba(255, 183, 3, 0.2), rgba(251, 86, 7, 0.15));
+    color: #ffb703;
+    border: 1px solid rgba(255, 183, 3, 0.25);
+  }
+  
+  .adminSidebarBottom {
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 183, 3, 0.15);
+  }
+  
+  .adminWho {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+  
+  .adminLogoutBtn {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 900;
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    background: rgba(220, 38, 38, 0.1);
+    color: #f87171;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+  }
+  
+  .adminLogoutBtn:hover {
+    background: rgba(220, 38, 38, 0.2);
+  }
+  
+  /* ===== MAIN ===== */
+  .adminMain {
+    flex: 1;
+    background: linear-gradient(135deg, #fff7e6 0%, #ffe7c4 50%, #fff1dc 100%);
+    padding: 32px;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+  
+  /* ===== TOP BAR ===== */
+  .adminTopBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+  
+  .adminPageTitle {
+    font-size: 22px;
+    font-weight: 950;
+    color: #1a0a00;
+    margin-bottom: 0;
+  }
+  
+  .adminPageSub {
+    font-size: 13px;
+    color: rgba(26, 10, 0, 0.55);
+    margin-top: 3px;
+    font-weight: 700;
+  }
+  
+  .adminShiftBadgeOpen {
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    color: #fff;
+  }
+  
+  .adminShiftBadgeClosed {
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    background: rgba(26, 10, 0, 0.08);
+    color: rgba(26, 10, 0, 0.6);
+    border: 1px solid rgba(26, 10, 0, 0.12);
+  }
+  
+  /* ===== METRIC CARDS ===== */
+  .adminMetrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  
+  .adminMetricCard {
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 16px;
+    padding: 18px;
+    border: 1px solid rgba(255, 183, 3, 0.2);
+    backdrop-filter: blur(10px);
+  }
+  
+  .adminMetricIcon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  
+  .adminMetricIcon.gold { background: rgba(255, 183, 3, 0.15); }
+  .adminMetricIcon.orange { background: rgba(251, 86, 7, 0.12); }
+  .adminMetricIcon.green { background: rgba(22, 163, 74, 0.12); }
+  .adminMetricIcon.blue { background: rgba(59, 130, 246, 0.1); }
+  
+  .adminMetricLabel {
+    font-size: 11px;
+    font-weight: 900;
+    color: rgba(26, 10, 0, 0.55);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  
+  .adminMetricValue {
+    font-size: 26px;
+    font-weight: 950;
+    color: #1a0a00;
+  }
+  
+  .adminMetricSub {
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(26, 10, 0, 0.45);
+  }
+  
+  /* ===== CARDS ===== */
+  .adminCardsRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  
+  .adminRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  
+  .adminCard {
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid rgba(255, 183, 3, 0.2);
+    backdrop-filter: blur(10px);
+    margin-bottom: 16px;
+  }
+  
+  .adminCardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .adminCardTitle {
+    font-size: 14px;
+    font-weight: 950;
+    color: #1a0a00;
+    margin-bottom: 14px;
+  }
+  
+  .adminCardBadge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.12);
+    color: #16a34a;
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    font-weight: 900;
+  }
+  
+  .adminCardBadgeGray {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(26, 10, 0, 0.06);
+    color: rgba(26, 10, 0, 0.5);
+    border: 1px solid rgba(26, 10, 0, 0.12);
+    font-weight: 900;
+  }
+  
+  /* ===== EMPLOYEE ROWS ===== */
+  .adminEmpRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 183, 3, 0.1);
+  }
+  
+  .adminEmpRow:last-child { border-bottom: none; }
+  
+  .adminEmpAvatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffb703, #fb5607);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 900;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  
+  .adminEmpName {
+    font-size: 13px;
+    font-weight: 900;
+    color: #1a0a00;
+  }
+  
+  .adminEmpTime {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(26, 10, 0, 0.5);
+    margin-top: 2px;
+  }
+  
+  .adminEmpDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  
+  /* ===== INFO ROWS ===== */
+  .adminInfoRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(255, 183, 3, 0.1);
+    font-size: 13px;
+  }
+  
+  .adminInfoRow:last-child { border-bottom: none; }
+  
+  .adminInfoLabel {
+    font-weight: 700;
+    color: rgba(26, 10, 0, 0.55);
+  }
+  
+  .adminInfoValue {
+    font-weight: 900;
+    color: #1a0a00;
+  }
+  
+  /* ===== QUICK ACTIONS ===== */
+  .adminQuickActions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+  
+  .adminQuickBtn {
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid rgba(255, 183, 3, 0.2);
+    cursor: pointer;
+    text-align: left;
+    transition: transform 0.12s ease;
+  }
+  
+  .adminQuickBtn:hover { transform: translateY(-2px); }
+  
+  .adminQuickIcon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  
+  .adminQuickTitle {
+    font-size: 13px;
+    font-weight: 950;
+    color: #1a0a00;
+  }
+  
+  .adminQuickSub {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(26, 10, 0, 0.5);
+    margin-top: 4px;
+  }
+  
+  /* ===== BADGES ===== */
+  .adminBadgeOpen {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    background: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+  }
+  
+  .adminBadgeClosed {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    background: rgba(26, 10, 0, 0.06);
+    color: rgba(26, 10, 0, 0.5);
+    border: 1px solid rgba(26, 10, 0, 0.12);
+  }
+  
+  .adminBadgeActive {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    background: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+  }
+  
+  .adminBadgeInactive {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    background: rgba(26, 10, 0, 0.06);
+    color: rgba(26, 10, 0, 0.5);
+    border: 1px solid rgba(26, 10, 0, 0.1);
+  }
+  
+  /* ===== TABLES ===== */
+  .adminTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  
+  .adminTable th {
+    text-align: left;
+    font-weight: 900;
+    color: rgba(26, 10, 0, 0.55);
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 183, 3, 0.2);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  
+  .adminTable td {
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 183, 3, 0.1);
+    color: #1a0a00;
+    font-weight: 700;
+  }
+  
+  .adminTable tr:last-child td { border-bottom: none; }
+  
+  .adminActionBtn {
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 900;
+    border: 1px solid rgba(26, 10, 0, 0.15);
+    background: transparent;
+    color: rgba(26, 10, 0, 0.7);
+    cursor: pointer;
+    margin-right: 6px;
+  }
+  
+  .adminActionBtn:hover { background: rgba(26, 10, 0, 0.06); }
+  
+  /* ===== BUTTONS ===== */
+  .adminPrimaryBtn {
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 900;
+    border: none;
+    background: linear-gradient(135deg, #ffb703, #fb5607);
+    color: #1a0a00;
+    cursor: pointer;
+  }
+  
+  .adminPrimaryBtn:hover { filter: brightness(1.05); }
+  
+  .adminInput {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 183, 3, 0.3);
+    background: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a0a00;
+    outline: none;
+  }
+  
+  .adminInput:focus {
+    border-color: rgba(255, 183, 3, 0.6);
+    box-shadow: 0 0 0 3px rgba(255, 183, 3, 0.1);
+  }
+  
+  /* ===== PAGE HEADER ===== */
+  .adminPageHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  
+  .adminPageSubtitle {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: rgba(26, 10, 0, 0.55);
+    font-weight: 700;
+  }
+  
+  .adminPageMutedText {
+    font-size: 13px;
+    color: rgba(26, 10, 0, 0.5);
+    font-weight: 700;
+  }
+  
+  .adminPageHeaderActions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  /* ===== FILTER BUTTONS ===== */
+  .adminFilterGroup {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .adminFilterBtn {
+    border: 1px solid rgba(255, 183, 3, 0.3);
+    background: rgba(255, 255, 255, 0.7);
+    color: #1a0a00;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  
+  .adminFilterBtn.active {
+    background: linear-gradient(135deg, #ffb703, #fb5607);
+    color: #1a0a00;
+    border-color: transparent;
+    font-weight: 900;
+  }
+  
+  /* ===== ADD BUTTON ===== */
+  .adminAddBtn {
+    background: linear-gradient(135deg, #ffb703, #fb5607);
+    color: #1a0a00;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(255, 183, 3, 0.3);
+  }
+  
+  .adminAddBtn:hover { filter: brightness(1.05); }
+  
+  /* ===== MENU ITEMS ===== */
+  .adminMenuGroups {
+    display: grid;
+    gap: 18px;
+    margin-top: 18px;
+  }
+  
+  .adminMenuSection { padding: 20px; }
+  
+  .adminMenuSectionHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  
+  .adminSectionSubtext {
+    margin-top: 4px;
+    font-size: 13px;
+    color: rgba(26, 10, 0, 0.5);
+    font-weight: 700;
+  }
+  
+  .adminMenuGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  
+  .adminMenuItemCard {
+    border: 1px solid rgba(255, 183, 3, 0.2);
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  
+  .adminMenuItemCard.isInactive { opacity: 0.65; }
+  
+  .adminMenuItemTop {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  
+  .adminMenuItemName {
+    font-size: 15px;
+    font-weight: 900;
+    color: #1a0a00;
+    line-height: 1.25;
+  }
+  
+  .adminMenuItemMetaRow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  
+  .adminMenuPrice {
+    font-size: 17px;
+    font-weight: 900;
+    color: #c2410c;
+    white-space: nowrap;
+  }
+  
+  .adminMenuBadge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 900;
+  }
+  
+  .adminMenuBadgeActive {
+    background: rgba(34, 197, 94, 0.12);
+    color: #16a34a;
+  }
+  
+  .adminMenuBadgeInactive {
+    background: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+  }
+  
+  .adminMenuMetaText {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(26, 10, 0, 0.5);
+  }
+  
+  .adminMenuDescription {
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: rgba(26, 10, 0, 0.65);
+    min-height: 40px;
+  }
+  
+  .adminMenuImageWrap {
+    margin-top: 12px;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 183, 3, 0.15);
+  }
+  
+  .adminMenuImage {
+    display: block;
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+  }
+  
+  .adminMenuFooter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 183, 3, 0.12);
+  }
+  
+  .adminMenuFooterLabel {
+    font-size: 12px;
+    color: rgba(26, 10, 0, 0.5);
+    font-weight: 700;
+  }
+  
+  .adminMenuActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .adminMenuEditBtn {
+    background: linear-gradient(135deg, #ffb703, #fb5607);
+    border: none;
+    color: #1a0a00;
+    font-size: 12px;
+    font-weight: 900;
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  
+  .adminMenuEditBtn:hover { filter: brightness(1.05); }
+  
+  .adminMenuToggleBtn {
+    border: none;
+    font-size: 12px;
+    font-weight: 900;
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  
+  .adminMenuToggleBtn.danger {
+    background: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+  }
+  
+  .adminMenuToggleBtn.success {
+    background: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+  }
+  
+  /* ===== MODAL ===== */
+  .adminModalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 10, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 999;
+  }
+  
+  .adminModal {
+    width: min(680px, 100%);
+    max-height: 90vh;
+    overflow-y: auto;
+    background: linear-gradient(180deg, #fffdfb 0%, #fff7f1 100%);
+    border: 1px solid rgba(255, 183, 3, 0.2);
+    border-radius: 20px;
+    box-shadow: 0 30px 80px rgba(26, 10, 0, 0.25);
+    padding: 24px;
+  }
+  
+  .adminModalHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  
+  .adminModalTitle {
+    font-size: 20px;
+    font-weight: 950;
+    color: #1a0a00;
+  }
+  
+  .adminModalSubtitle {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: rgba(26, 10, 0, 0.55);
+    font-weight: 700;
+  }
+  
+  .adminModalClose {
+    width: 36px;
+    height: 36px;
+    border: 1px solid rgba(255, 183, 3, 0.3);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.85);
+    color: #1a0a00;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .adminModalBody {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  
+  .adminFormGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  
+  .adminFormGroup label {
+    font-size: 13px;
+    font-weight: 900;
+    color: rgba(26, 10, 0, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  
+  .adminFormGroup input,
+  .adminFormGroup textarea,
+  .adminFormGroup select {
+    width: 100%;
+    border: 1px solid rgba(255, 183, 3, 0.3);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #1a0a00;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 12px;
+    outline: none;
+  }
+  
+  .adminFormGroup input:focus,
+  .adminFormGroup textarea:focus,
+  .adminFormGroup select:focus {
+    border-color: rgba(255, 183, 3, 0.6);
+    box-shadow: 0 0 0 3px rgba(255, 183, 3, 0.1);
+  }
+  
+  .adminFormGroup textarea {
+    min-height: 90px;
+    resize: vertical;
+    line-height: 1.5;
+  }
+  
+  .adminSwitchRow {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 4px;
+  }
+  
+  .adminSwitchCard {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 183, 3, 0.2);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.7);
+  }
+  
+  .adminSwitchTextBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .adminSwitchLabel {
+    font-size: 13px;
+    font-weight: 900;
+    color: #1a0a00;
+  }
+  
+  .adminSwitchHelp {
+    font-size: 12px;
+    line-height: 1.45;
+    color: rgba(26, 10, 0, 0.55);
+  }
+  
+  .adminSwitchCard input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+  }
+  
+  .adminModalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  
+  .adminModalSecondaryBtn {
+    border: 1px solid rgba(26, 10, 0, 0.15);
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+    background: transparent;
+    color: #1a0a00;
+  }
+  
+  .adminModalPrimaryBtn {
+    border: none;
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+    background: linear-gradient(135deg, #ffb703, #fb5607);
+    color: #1a0a00;
+  }
+  
+  /* ===== ERROR / SUCCESS ===== */
+  .adminError {
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(220, 38, 38, 0.08);
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    color: #dc2626;
+    font-size: 13px;
+    font-weight: 800;
+    margin-top: 10px;
+  }
+  
+  .adminSuccess {
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    color: #16a34a;
+    font-size: 13px;
+    font-weight: 800;
+    margin-top: 10px;
+  }
+  
+  .adminDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #16a34a;
+    display: inline-block;
+    margin-right: 8px;
+  }
+
+  /* =========================
+   ADMIN MENU PAGE ONLY
+   ========================= */
+
+.adminPageHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  
+  .adminPageTitle {
+    font-size: 30px;
+    font-weight: 900;
+    color: #241206;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
+  
+  .adminPageSubtitle {
+    margin-top: 6px;
+    font-size: 13px;
+    color: rgba(36, 18, 6, 0.58);
+    font-weight: 600;
+  }
+  
+  .adminPageMutedText {
+    font-size: 13px;
+    color: rgba(36, 18, 6, 0.54);
+    font-weight: 600;
+  }
+  
+  .adminPageHeaderActions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .adminFilterGroup {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(245, 158, 11, 0.16);
+    box-shadow: 0 8px 18px rgba(89, 43, 0, 0.06);
+  }
+  
+  .adminFilterBtn {
+    border: none;
+    background: transparent;
+    color: rgba(36, 18, 6, 0.64);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+  
+  .adminFilterBtn:hover {
+    background: rgba(245, 158, 11, 0.08);
+    color: #241206;
+  }
+  
+  .adminFilterBtn.active {
+    background: linear-gradient(135deg, #f59e0b, #ea580c);
+    color: #fff;
+    box-shadow: 0 10px 24px rgba(234, 88, 12, 0.22);
+  }
+  
+  .adminAddBtn {
+    border: none;
+    border-radius: 999px;
+    padding: 11px 18px;
+    background: linear-gradient(135deg, #f59e0b, #ea580c);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 12px 24px rgba(234, 88, 12, 0.2);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  
+  .adminAddBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 30px rgba(234, 88, 12, 0.24);
+  }
+  
+  /* top metrics */
+  .adminMetrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  
+  .adminMetricCard {
+    position: relative;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(245, 158, 11, 0.14);
+    border-radius: 20px;
+    padding: 18px;
+    box-shadow: 0 18px 40px rgba(89, 43, 0, 0.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  
+  .adminMetricCard::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #f59e0b, #fb923c, #ea580c);
+  }
+  
+  .adminMetricLabel {
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(36, 18, 6, 0.46);
+    margin-bottom: 10px;
+  }
+  
+  .adminMetricValue {
+    font-size: 30px;
+    font-weight: 900;
+    line-height: 1;
+    color: #241206;
+  }
+  
+  /* general cards */
+  .adminCard {
+    position: relative;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(245, 158, 11, 0.14);
+    border-radius: 24px;
+    padding: 20px;
+    box-shadow: 0 18px 42px rgba(89, 43, 0, 0.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  
+  .adminCard::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.95), rgba(234, 88, 12, 0.8));
+  }
+  
+  .adminCardTitle {
+    font-size: 17px;
+    font-weight: 900;
+    color: #241206;
+  }
+  
+  /* grouped sections */
+  .adminMenuGroups {
+    display: grid;
+    gap: 18px;
+  }
+  
+  .adminMenuSection {
+    padding: 20px;
+  }
+  
+  .adminMenuSectionHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  
+  .adminSectionSubtext {
+    margin-top: 4px;
+    font-size: 13px;
+    color: rgba(36, 18, 6, 0.5);
+    font-weight: 600;
+  }
+  
+  /* menu item grid */
+  .adminMenuGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+    gap: 16px;
+  }
+  
+  .adminMenuItemCard {
+    background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,248,240,0.92) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.14);
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 12px 28px rgba(89, 43, 0, 0.07);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+  }
+  
+  .adminMenuItemCard:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 34px rgba(89, 43, 0, 0.1);
+  }
+  
+  .adminMenuItemCard.isInactive {
+    opacity: 0.68;
+  }
+  
+  .adminMenuItemTop {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  
+  .adminMenuItemName {
+    font-size: 16px;
+    font-weight: 900;
+    color: #241206;
+    line-height: 1.2;
+  }
+  
+  .adminMenuItemMetaRow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  
+  .adminMenuBadge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 900;
+  }
+  
+  .adminMenuBadgeActive {
+    background: rgba(34, 197, 94, 0.12);
+    color: #15803d;
+    border: 1px solid rgba(34, 197, 94, 0.18);
+  }
+  
+  .adminMenuBadgeInactive {
+    background: rgba(220, 38, 38, 0.1);
+    color: #b91c1c;
+    border: 1px solid rgba(220, 38, 38, 0.15);
+  }
+  
+  .adminMenuMetaText {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(36, 18, 6, 0.48);
+  }
+  
+  .adminMenuPrice {
+    font-size: 18px;
+    font-weight: 900;
+    color: #c2410c;
+    white-space: nowrap;
+  }
+  
+  .adminMenuDescription {
+    margin-top: 12px;
+    min-height: 42px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: rgba(36, 18, 6, 0.64);
+  }
+  
+  .adminMenuImageWrap {
+    margin-top: 14px;
+    overflow: hidden;
+    border-radius: 14px;
+    border: 1px solid rgba(245, 158, 11, 0.14);
+  }
+  
+  .adminMenuImage {
+    display: block;
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+  }
+  
+  .adminMenuFooter {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(245, 158, 11, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .adminMenuFooterLabel {
+    font-size: 12px;
+    color: rgba(36, 18, 6, 0.5);
+    font-weight: 700;
+  }
+  
+  .adminMenuActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .adminMenuEditBtn {
+    border: none;
+    border-radius: 999px;
+    padding: 8px 13px;
+    background: linear-gradient(135deg, #f59e0b, #ea580c);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+  
+  .adminMenuToggleBtn {
+    border: none;
+    border-radius: 999px;
+    padding: 8px 13px;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+  
+  .adminMenuToggleBtn.danger {
+    background: rgba(220, 38, 38, 0.1);
+    color: #b91c1c;
+  }
+  
+  .adminMenuToggleBtn.success {
+    background: rgba(34, 197, 94, 0.12);
+    color: #15803d;
+  }
+  
+  /* modal */
+  .adminModalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(24, 12, 5, 0.48);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 999;
+    backdrop-filter: blur(4px);
+  }
+  
+  .adminModal {
+    width: min(680px, 100%);
+    max-height: 90vh;
+    overflow-y: auto;
+    background: linear-gradient(180deg, #fffdf9 0%, #fff7ed 100%);
+    border: 1px solid rgba(245, 158, 11, 0.16);
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 28px 80px rgba(24, 12, 5, 0.22);
+  }
+  
+  .adminModalHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+  
+  .adminModalTitle {
+    font-size: 22px;
+    font-weight: 900;
+    color: #241206;
+  }
+  
+  .adminModalSubtitle {
+    margin-top: 6px;
+    font-size: 13px;
+    color: rgba(36, 18, 6, 0.54);
+    font-weight: 600;
+  }
+  
+  .adminModalClose {
+    width: 38px;
+    height: 38px;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.88);
+    color: #241206;
+    cursor: pointer;
+    font-size: 15px;
+  }
+  
+  .adminModalBody {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  
+  .adminFormGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  
+  .adminFormGroup label {
+    font-size: 12px;
+    font-weight: 900;
+    color: rgba(36, 18, 6, 0.68);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  
+  .adminFormGroup input,
+  .adminFormGroup textarea,
+  .adminFormGroup select {
+    width: 100%;
+    border: 1px solid rgba(245, 158, 11, 0.22);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #241206;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 11px 12px;
+    outline: none;
+  }
+  
+  .adminFormGroup input:focus,
+  .adminFormGroup textarea:focus,
+  .adminFormGroup select:focus {
+    border-color: rgba(245, 158, 11, 0.55);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+  }
+  
+  .adminFormGroup textarea {
+    min-height: 96px;
+    resize: vertical;
+  }
+  
+  .adminSwitchRow {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  
+  .adminSwitchCard {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid rgba(245, 158, 11, 0.14);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.72);
+  }
+  
+  .adminSwitchTextBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .adminSwitchLabel {
+    font-size: 13px;
+    font-weight: 900;
+    color: #241206;
+  }
+  
+  .adminSwitchHelp {
+    font-size: 12px;
+    line-height: 1.45;
+    color: rgba(36, 18, 6, 0.52);
+  }
+  
+  .adminModalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  
+  .adminModalSecondaryBtn {
+    border: 1px solid rgba(36, 18, 6, 0.12);
+    background: transparent;
+    color: #241206;
+    border-radius: 999px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  
+  .adminModalPrimaryBtn {
+    border: none;
+    background: linear-gradient(135deg, #f59e0b, #ea580c);
+    color: #fff;
+    border-radius: 999px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+  
+  /* responsive */
+  @media (max-width: 1100px) {
+    .adminMetrics {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  
+  @media (max-width: 700px) {
+    .adminMetrics,
+    .adminSwitchRow {
+      grid-template-columns: 1fr;
+    }
+  
+    .adminPageTitle {
+      font-size: 24px;
+    }
+  
+    .adminMetricValue {
+      font-size: 24px;
+    }
+  
+    .adminModal {
+      padding: 18px;
+    }
+  }
+
+  .adminMenuToolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  
+  .adminMenuSearchWrap {
+    flex: 1;
+    min-width: 260px;
+  }
+  
+  .adminMenuSearchInput {
+    width: 100%;
+    height: 44px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 183, 3, 0.24);
+    background: rgba(255, 255, 255, 0.82);
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a0a00;
+    outline: none;
+    box-shadow: 0 8px 20px rgba(89, 43, 0, 0.05);
+  }
+  
+  .adminMenuSearchInput:focus {
+    border-color: rgba(255, 183, 3, 0.58);
+    box-shadow: 0 0 0 3px rgba(255, 183, 3, 0.1);
+  }
+  
+  .adminMenuToolbarRight {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .adminMenuSelect {
+    height: 44px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 183, 3, 0.24);
+    background: rgba(255, 255, 255, 0.82);
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #1a0a00;
+    outline: none;
+    cursor: pointer;
+  }
+  
+  .adminCategoryBar {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 6px 0 12px;
+    margin-bottom: 18px;
+    scroll-behavior: smooth;
+  }
+  
+  .adminCategoryBar::-webkit-scrollbar {
+    height: 8px;
+  }
+  
+  .adminCategoryBar::-webkit-scrollbar-thumb {
+    background: rgba(255, 183, 3, 0.25);
+    border-radius: 999px;
+  }
+  
+  .adminCategoryPill {
+    border: 1px solid rgba(255, 183, 3, 0.24);
+    background: rgba(255, 255, 255, 0.82);
+    color: rgba(26, 10, 0, 0.72);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.18s ease;
+  }
+  
+  .adminCategoryPill:hover {
+    background: rgba(255, 183, 3, 0.08);
+    transform: translateY(-1px);
+  }
+
+  .adminMenuToolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  
+  .adminMenuSearchWrap {
+    flex: 1;
+    min-width: 260px;
+  }
+  
+  .adminMenuSearchInput {
+    width: 100%;
+    height: 44px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 183, 3, 0.24);
+    background: rgba(255, 255, 255, 0.82);
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a0a00;
+    outline: none;
+    box-shadow: 0 8px 20px rgba(89, 43, 0, 0.05);
+  }
+  
+  .adminMenuSearchInput:focus {
+    border-color: rgba(255, 183, 3, 0.58);
+    box-shadow: 0 0 0 3px rgba(255, 183, 3, 0.1);
+  }
+  
+  .adminMenuToolbarRight {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .adminMenuSelect {
+    height: 44px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 183, 3, 0.24);
+    background: rgba(255, 255, 255, 0.82);
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #1a0a00;
+    outline: none;
+    cursor: pointer;
+  }
+  
+  .adminCategoryBar {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 6px 0 12px;
+    margin-bottom: 18px;
+    scroll-behavior: smooth;
+  }
+  
+  .adminCategoryBar::-webkit-scrollbar {
+    height: 8px;
+  }
+  
+  .adminCategoryBar::-webkit-scrollbar-thumb {
+    background: rgba(255, 183, 3, 0.25);
+    border-radius: 999px;
+  }
+  
+  .adminCategoryPill {
+    border: 1px solid rgba(255, 183, 3, 0.24);
+    background: rgba(255, 255, 255, 0.82);
+    color: rgba(26, 10, 0, 0.72);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.18s ease;
+  }
+  
+  .adminCategoryPill:hover {
+    background: rgba(255, 183, 3, 0.08);
+    transform: translateY(-1px);
+  }

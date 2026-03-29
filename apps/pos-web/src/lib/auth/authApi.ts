@@ -3,7 +3,7 @@
  * It keeps "fetch" code out of your UI components.
  */
 
-export type UserRole = "ADMIN" | "EMPLOYEE";
+export type UserRole = "ADMIN" | "MANAGER" | "EMPLOYEE";
 
 export type LoginSuccessResponse = {
   token: string;
@@ -102,6 +102,6 @@ export async function fetchMe(token: string) {
     throw new Error("Session expired");
   }
 
-  const data = (await res.json()) as { user: { id: string; name: string | null; role: "ADMIN" | "EMPLOYEE" } };
+  const data = (await res.json()) as { user: { id: string; name: string | null; role: UserRole; employeeCode?: string | null } };
   return data.user;
 }

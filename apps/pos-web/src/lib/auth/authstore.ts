@@ -18,6 +18,7 @@ type AuthUser = {
   id: string;
   name: string | null;
   role: UserRole;
+  employeeCode?: string | null;
 };
 
 // How the user logged in

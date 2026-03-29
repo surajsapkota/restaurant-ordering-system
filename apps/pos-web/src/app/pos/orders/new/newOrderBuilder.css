@@ -703,3 +703,27 @@
     border-color: rgba(251,133,0,.35);
   }
   
+  /* Void button beside existing items */
+.voidBtn {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms ease, background 120ms ease, border 120ms ease;
+}
+
+.voidBtn:hover {
+  background: rgba(220, 38, 38, 0.12);
+  transform: translateY(-1px);
+}
+
+.voidBtn.disabled,
+.voidBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}

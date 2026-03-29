@@ -1,0 +1,145 @@
+/* apps/pos-web/src/app/pos/orders/[id]/receipt/receipt.css */
+
+.receiptShell {
+    min-height: 100vh;
+    background: #f6f7fb;
+    padding: 24px;
+  }
+  
+  .receiptWrap {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  
+  .receiptActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  
+  .softBtn {
+    border: none;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-weight: 700;
+    cursor: pointer;
+    background: white;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  }
+  
+  .receiptCard {
+    background: white;
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  }
+  
+  .receiptBrand {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .receiptBrand h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 800;
+    color: #111827;
+  }
+  
+  .receiptBrand p {
+    margin: 6px 0 0;
+    color: #6b7280;
+    font-weight: 600;
+  }
+  
+  .receiptMeta {
+    display: grid;
+    gap: 8px;
+    color: #374151;
+    font-size: 14px;
+  }
+  
+  .receiptDivider {
+    border-top: 1px dashed #d1d5db;
+    margin: 18px 0;
+  }
+  
+  .receiptItems {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  
+  .receiptLine {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  
+  .receiptItemName {
+    font-weight: 700;
+    color: #111827;
+  }
+  
+  .receiptItemNote {
+    font-size: 13px;
+    color: #6b7280;
+    margin-top: 4px;
+    white-space: pre-wrap;
+  }
+  
+  .receiptLineRight {
+    font-weight: 700;
+    color: #111827;
+    white-space: nowrap;
+  }
+  
+  .receiptTotals {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .totRow {
+    display: flex;
+    justify-content: space-between;
+    color: #374151;
+  }
+  
+  .totalRow {
+    font-size: 18px;
+    color: #111827;
+  }
+  
+  .receiptFooter {
+    text-align: center;
+    margin-top: 22px;
+    color: #6b7280;
+    font-size: 14px;
+  }
+  
+  .receiptError {
+    background: #fee2e2;
+    color: #991b1b;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+  
+  @media print {
+    .noPrint {
+      display: none !important;
+    }
+  
+    .receiptShell {
+      background: white;
+      padding: 0;
+    }
+  
+    .receiptCard {
+      box-shadow: none;
+      border-radius: 0;
+      padding: 0;
+    }
+  }
