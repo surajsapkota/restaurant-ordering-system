@@ -12,7 +12,7 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
-  "https://restaurant-ordering-system-drab.vercel.app",
+  "https://bombay2mumbai-pos.vercel.app",
 ];
 
 app.use(
@@ -20,12 +20,7 @@ app.use(
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
 
-      const isExactMatch = allowedOrigins.includes(origin);
-      const isVercelPreview =
-        origin.startsWith("https://restaurant-ordering-system-") &&
-        origin.endsWith("-surajsapkotas-projects.vercel.app");
-
-      if (isExactMatch || isVercelPreview) {
+      if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
