@@ -6,6 +6,7 @@ import shiftRoutes from "./routes/shifts.routes";
 import tablesRouter from "./routes/tables.routes";
 import cors from "cors";
 import employeesRoutes from "./routes/employees.routes";
+import printerRoutes from "./routes/printer.routes";
 
 const app = express();
 
@@ -35,7 +36,7 @@ app.use("/menu", menuRoutes);
 app.use("/orders", ordersRoutes);
 app.use("/tables", tablesRouter);
 app.use("/auth", authRoutes);
-
+app.use("/printer", printerRoutes);
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "OK" });
 });

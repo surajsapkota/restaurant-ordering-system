@@ -138,6 +138,7 @@ export default function ReviewPage() {
         type: type === "dine-in" ? "DINE_IN" : type.toUpperCase(), // TAKEOUT / DELIVERY
         tableNumber: type === "dine-in" ? table : null,
         terminalCode: "TABLET-1",
+        sendToKitchen: true,
         items: cart.map((l) => ({
           menuItemId: l.menuItemId,
           qty: l.qty,
@@ -177,9 +178,6 @@ export default function ReviewPage() {
 
       const createdId: string | undefined = data?.order?.id;
       if (!createdId) throw new Error("Order created but no order id returned from API.");
-
-      // ✅ move NEW -> IN_KITCHEN immediately (POS behavior)
-      await patchStatusToKitchen(createdId);
 
       clearActiveCart();
       router.push("/pos/orders");

@@ -4,6 +4,7 @@ import { Router, Response } from "express";
 import prisma from "../db/prisma";
 import { OrderStatus, OrderType, PaymentMethod, PaymentStatus } from "@prisma/client";
 import { requireAuth } from "../middleware/requireAuth";
+import { printKitchenTicket } from "../utils/kitchenPrinter";
 
 const router = Router();
 
@@ -105,25 +106,25 @@ router.post("/:id/items", requireAuth, async (req: any, res: Response) => {
 
     const menuItemMap = new Map(menuItems.map((m) => [m.id, m]));
 
-    // Add items + update totals in a transaction so totals never go out of sync
+    const newlyAddedItemsForPrint: any[] = [];
+
     const updated = await prisma.$transaction(async (tx) => {
       for (const it of items) {
         const qty = Number(it.qty ?? 1);
         if (!Number.isInteger(qty) || qty <= 0) {
           throw new Error("qty must be a positive integer");
         }
-
+    
         const menuItem = menuItemMap.get(it.menuItemId);
         if (!menuItem) throw new Error("Invalid menuItemId");
-
-        // We keep side/spice/extra in notes right now to avoid schema changes.
+    
         const notesText =
           (typeof it.notes === "string" && it.notes.trim() ? it.notes.trim() + "\n" : "") +
           (it.sideChoice ? `Side: ${it.sideChoice}\n` : "") +
           (it.spiceLevel ? `Spice: ${it.spiceLevel}\n` : "") +
           (it.extraCents ? `Extra: ${(Number(it.extraCents) / 100).toFixed(2)}` : "");
-
-        await tx.orderItem.create({
+    
+        const createdItem = await tx.orderItem.create({
           data: {
             orderId,
             menuItemId: menuItem.id,
@@ -133,7 +134,10 @@ router.post("/:id/items", requireAuth, async (req: any, res: Response) => {
             notes: notesText.trim() ? notesText.trim() : null,
           },
         });
+    
+        newlyAddedItemsForPrint.push(createdItem);
       }
+
 
       // recompute totals from DB
       const dbItems = await tx.orderItem.findMany({
@@ -160,6 +164,19 @@ router.post("/:id/items", requireAuth, async (req: any, res: Response) => {
       });
     });
 
+    if (sendToKitchen) {
+      try {
+        await printKitchenTicket({
+          ...updated,
+          items: newlyAddedItemsForPrint,
+        });
+    
+        console.log("Kitchen ticket printed");
+      } catch (printError) {
+        console.error("Kitchen print failed:", printError);
+      }
+    }
+    
     return res.status(200).json({ order: updated });
   } catch (e) {
     console.error("POST /orders/:id/items failed:", e);
@@ -191,6 +208,7 @@ router.post("/", requireAuth, async (req: any, res: Response) => {
       tipDollars,
       items,
       terminalCode,
+      sendToKitchen
     } = req.body;
 
     // ---- validations ----
@@ -357,6 +375,8 @@ router.post("/", requireAuth, async (req: any, res: Response) => {
           taxCents,
           tipCents,
           totalCents,
+          status: sendToKitchen ? OrderStatus.IN_KITCHEN : OrderStatus.NEW,
+          sentToKitchenAt: sendToKitchen ? new Date() : null,
 
           storeShiftId: shift.id,
           terminalCode,
@@ -389,6 +409,15 @@ router.post("/", requireAuth, async (req: any, res: Response) => {
       return { mode: "CREATED", order: created };
     });
 
+  if (sendToKitchen && createdOrUpdated.order) {
+    try {
+      await printKitchenTicket(createdOrUpdated.order);
+      console.log("Kitchen ticket printed");
+    } catch (printError) {
+      console.error("Kitchen print failed:", printError);
+    }
+  }
+    
     return res.status(createdOrUpdated.mode === "CREATED" ? 201 : 200).json(createdOrUpdated);
   } catch (error) {
     console.error("POST /orders failed:", error);
@@ -421,7 +450,15 @@ router.patch("/:id/status", requireAuth, async (req: any, res: Response) => {
       data: { status, ...extraUpdates },
       include: { items: true },
     });
-
+    
+    if (status === "IN_KITCHEN") {
+      try {
+        await printKitchenTicket(updatedOrder);
+      } catch (printError) {
+        console.error("Kitchen print failed:", printError);
+      }
+    }
+    
     return res.status(200).json({ order: updatedOrder });
   } catch (error) {
     console.error("PATCH /orders/:id/status failed:", error);
