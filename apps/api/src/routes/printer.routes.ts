@@ -1,6 +1,8 @@
 import { Router, Request, Response } from "express";
 import net from "net";
 import { printCashierReceiptText } from "../utils/cashierPrinter";
+import prisma from "../db/prisma";
+import { formatCashierReceipt } from "../utils/receiptFormatter";
 
 const router = Router();
 
@@ -101,6 +103,35 @@ front counter printer works!
     return res.status(500).json({
       success: false,
       message: "Cashier printer test failed",
+    });
+  }
+});
+router.get("/cashier-receipt/:orderId", async (req: Request, res: Response) => {
+  try {
+    const orderId = String(req.params.orderId);
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    const receiptText = formatCashierReceipt(order);
+
+    await printCashierReceiptText(receiptText);
+
+    return res.json({
+      success: true,
+      message: "Cashier receipt printed",
+    });
+  } catch (error) {
+    console.error("Cashier receipt print failed:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Cashier receipt print failed",
     });
   }
 });
