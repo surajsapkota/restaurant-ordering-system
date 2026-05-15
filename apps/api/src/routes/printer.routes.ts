@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import net from "net";
+import { printCashierReceiptText } from "../utils/cashierPrinter";
 
 const router = Router();
 
@@ -74,6 +75,32 @@ If you see this, printing works!
     return res.status(500).json({
       success: false,
       message: "Printer test failed",
+    });
+  }
+});
+
+router.get("/cashier-test", async (_req: Request, res: Response) => {
+  try {
+    await printCashierReceiptText(`
+BOMBAY TO MUMBAI
+------------------------------
+Cashier Printer Test
+
+If you see this,
+front counter printer works!
+
+------------------------------
+
+
+
+`);
+
+    return res.json({ success: true, message: "Cashier printer test printed" });
+  } catch (error) {
+    console.error("Cashier printer test failed:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Cashier printer test failed",
     });
   }
 });
