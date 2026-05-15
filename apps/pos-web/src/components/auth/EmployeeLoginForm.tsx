@@ -4,6 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/auth/authstore";
 
+async function readLoginError(res: Response) {
+  const contentType = res.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    const data = await res.json().catch(() => null);
+    return data?.error ?? "Login failed. Please try again.";
+  }
+
+  return "Could not reach the POS server. Check that the API is running.";
+}
+
 export default function EmployeeLoginForm() {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
@@ -24,18 +34,22 @@ export default function EmployeeLoginForm() {
 
     try {
       setIsLoading(true);
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+      if (!baseUrl) {
+        throw new Error("API URL is not set. Check the POS setup.");
+      }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/employee-login`, {
+      const res = await fetch(`${baseUrl}/auth/employee-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ employeeCode: employeeCode.trim(), pin: pin.trim() }),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
-        throw new Error(data.error ?? "Login failed");
+        throw new Error(await readLoginError(res));
       }
+
+      const data = await res.json();
 
       setAuth(data.token, data.user, "PIN");
       router.push("/pos/shift");

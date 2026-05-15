@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/lib/auth/authstore";
 import { useOrderDraftStore } from "@/lib/pos/orderDraftStore";
 import "./newOrderBuilder.css";
+import { Search, SlidersHorizontal, Plus } from "lucide-react";
 
 type MenuItem = {
   id: string;
@@ -14,6 +15,10 @@ type MenuItem = {
   taxable: boolean;
   imageUrl?: string | null;
   imageAlt?: string | null;
+};
+
+type VisibleMenuItem = MenuItem & {
+  categoryName?: string;
 };
 
 type MenuCategory = {
@@ -85,6 +90,7 @@ export default function NewOrderBuilderPage() {
   const [activeCatId, setActiveCatId] = useState<string | null>(null);
   const [loadingMenu, setLoadingMenu] = useState(true);
   const [menuError, setMenuError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   // Existing order items (read-only display)
   const [existingOrder, setExistingOrder] = useState<ExistingOrder | null>(null);
@@ -181,6 +187,23 @@ export default function NewOrderBuilderPage() {
     [categories, activeCatId]
   );
 
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleItems = useMemo<VisibleMenuItem[]>(() => {
+    if (!normalizedQuery) return activeCategory?.items ?? [];
+
+    return categories
+      .flatMap((category) =>
+        category.items.map((item) => ({
+          ...item,
+          categoryName: category.name,
+        }))
+      )
+      .filter((item) => {
+        const haystack = `${item.name} ${item.description ?? ""} ${item.categoryName}`.toLowerCase();
+        return haystack.includes(normalizedQuery);
+      });
+  }, [activeCategory?.items, categories, normalizedQuery]);
+
   function makeLineId() {
     return typeof crypto !== "undefined" && "randomUUID" in crypto
       ? crypto.randomUUID()
@@ -208,6 +231,10 @@ export default function NewOrderBuilderPage() {
       spiceLevel: spice,
       note: "",
     });
+  }
+
+  function quickAdd(item: MenuItem) {
+    addWithMods(item, DEFAULT_SIDE, DEFAULT_SPICE);
   }
 
   function openNote(lineId: string, currentNote?: string) {
@@ -322,23 +349,54 @@ export default function NewOrderBuilderPage() {
 
         {/* Items */}
         <section className="itemsPanel">
-          <div className="panelTitle">{activeCategory?.name ?? "Items"}</div>
+          <div className="itemsToolbar">
+            <div>
+              <div className="panelTitle">{normalizedQuery ? "Search results" : activeCategory?.name ?? "Items"}</div>
+              <div className="panelNote">
+                {normalizedQuery
+                  ? `${visibleItems.length} matching item${visibleItems.length === 1 ? "" : "s"}`
+                  : `${visibleItems.length} item${visibleItems.length === 1 ? "" : "s"}`}
+              </div>
+            </div>
+
+            <label className="menuSearch">
+              <Search size={17} aria-hidden="true" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search menu"
+                aria-label="Search menu"
+              />
+            </label>
+          </div>
 
           {!loadingMenu && !menuError && (
             <div className="itemsGrid">
-              {(activeCategory?.items ?? []).map((it) => (
-                <button key={it.id} type="button" className="itemCard" onClick={() => openModifiers(it)}>
+              {visibleItems.map((it) => (
+                <article key={it.id} className="itemCard">
                   <div className="itemTop">
                     <div className="itemName">{it.name}</div>
                     <div className="itemPrice">${centsToDollars(it.priceCents)}</div>
                   </div>
                   {it.description && <div className="itemDesc">{it.description}</div>}
-                  <div className="itemHint">Tap to add</div>
-                </button>
+                  {it.categoryName && <div className="itemCategoryTag">{it.categoryName}</div>}
+                  <div className="itemActions">
+                    <button type="button" className="quickAddBtn" onClick={() => quickAdd(it)}>
+                      <Plus size={16} aria-hidden="true" />
+                      Add
+                    </button>
+                    <button type="button" className="customizeBtn" onClick={() => openModifiers(it)}>
+                      <SlidersHorizontal size={16} aria-hidden="true" />
+                      Customize
+                    </button>
+                  </div>
+                </article>
               ))}
 
-              {(activeCategory?.items?.length ?? 0) === 0 && (
-                <div className="panelNote">No items in this category.</div>
+              {visibleItems.length === 0 && (
+                <div className="emptyMenuState">
+                  {normalizedQuery ? "No menu items match that search." : "No items in this category."}
+                </div>
               )}
             </div>
           )}

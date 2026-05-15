@@ -3,15 +3,19 @@
 import Image from "next/image";
 import "./login.css";
 import { motion } from "framer-motion";
+import { useState } from "react";
 import EmployeeLoginForm from "@/components/auth/EmployeeLoginForm";
 import AdminLoginForm from "@/components/auth/AdminLoginForm";
 
 export default function LoginPage() {
+  const [mobileMode, setMobileMode] = useState<"staff" | "admin">("staff");
+  const isAdminMobile = mobileMode === "admin";
+
   return (
     <main className="shell">
 
       {/* ── LEFT — Employee ── */}
-      <section className="left">
+      <section className={`left ${isAdminMobile ? "adminMobile" : ""}`}>
 
         <motion.div
           initial={{ opacity: 0, y: 14 }}
@@ -30,14 +34,49 @@ export default function LoginPage() {
           </div>
         </motion.div>
 
+        <div className="mobileLoginSwitch" aria-label="Login type">
+          <button
+            type="button"
+            className={mobileMode === "staff" ? "active" : ""}
+            onClick={() => setMobileMode("staff")}
+          >
+            Staff
+          </button>
+          <button
+            type="button"
+            className={mobileMode === "admin" ? "active" : ""}
+            onClick={() => setMobileMode("admin")}
+          >
+            Admin
+          </button>
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.08 }}
         >
-          <div className="eyebrow">Staff Portal</div>
-          <h1 className="title">Employee<br />Login</h1>
-          <p className="subtitle">Enter your code and PIN to start taking orders.</p>
+          <div className="eyebrow">{isAdminMobile ? "Admin Portal" : "Staff Portal"}</div>
+          <h1 className="title">
+            {isAdminMobile ? (
+              <>
+                Admin
+                <br />
+                Login
+              </>
+            ) : (
+              <>
+                Employee
+                <br />
+                Login
+              </>
+            )}
+          </h1>
+          <p className="subtitle">
+            {isAdminMobile
+              ? "Use your admin credentials for reports, staff, and menu controls."
+              : "Enter your code and PIN to start taking orders."}
+          </p>
         </motion.div>
 
         <motion.div
@@ -46,7 +85,7 @@ export default function LoginPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, delay: 0.15 }}
         >
-          <EmployeeLoginForm />
+          {isAdminMobile ? <AdminLoginForm /> : <EmployeeLoginForm />}
         </motion.div>
 
         <motion.p

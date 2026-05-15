@@ -25,6 +25,12 @@ type TablesStatusResponse = {
   tables: TableRow[];
 };
 
+type TableSocket = {
+  on(event: "tables:changed", handler: () => void): void;
+  off(event: "tables:changed", handler: () => void): void;
+  disconnect(): void;
+};
+
 export default function DineInPage() {
   const router = useRouter();
   const token = useAuthStore((s) => s.token);
@@ -119,7 +125,7 @@ export default function DineInPage() {
     // connect socket to backend
     const socket = socketIOClient(process.env.NEXT_PUBLIC_API_URL as string, {
       transports: ["websocket"],
-    });
+    }) as unknown as TableSocket;
   
     // when backend says tables changed, refresh once
     const handler = () => {

@@ -155,5 +155,36 @@ Order total:
 cd apps/api
 npm install
 
+import fs from "fs";
+import os from "os";
+import path from "path";
+import { execFile } from "child_process";
 
-Bombay to mumbai
+const CASHIER_PRINTER_NAME = "Cashier";
+
+export async function printCashierReceiptText(text: string): Promise<void> {
+  const filePath = path.join(os.tmpdir(), `receipt-${Date.now()}.txt`);
+
+  const rawText =
+    "\x1B\x40" +
+    "\x1B\x61\x00" +
+    text +
+    "\n\n\n\n" +
+    "\x1D\x56\x00";
+
+  fs.writeFileSync(filePath, rawText, "binary");
+
+  const printerPath = "\\\\localhost\\" + CASHIER_PRINTER_NAME;
+  const command = `copy /B "${filePath}" "${printerPath}"`;
+
+  return new Promise((resolve, reject) => {
+    execFile("cmd", ["/c", command], (error) => {
+      try {
+        fs.unlinkSync(filePath);
+      } catch {}
+
+      if (error) return reject(error);
+      resolve();
+    });
+  });
+}
