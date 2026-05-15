@@ -6,7 +6,9 @@
     "test": "jest --runInBand",
     "seed": "ts-node prisma/seed.ts",
     "dev": "tsx watch src/server.ts",
-    "start": "tsx src/server.ts"
+    "start": "tsx src/server.ts",
+    "printer:init": "ts-node-dev --transpile-only src/printerBridge.ts --init",
+    "printer:bridge": "ts-node-dev --transpile-only src/printerBridge.ts"
   },
   "keywords": [],
   "author": "",
