@@ -14,6 +14,16 @@ export type LoginSuccessResponse = {
   };
 };
 
+async function readApiError(res: Response, fallback: string) {
+  const contentType = res.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    const data = await res.json().catch(() => null);
+    return data?.error ?? fallback;
+  }
+
+  return "Could not reach the POS server. Check that the API is running.";
+}
+
 /**
  * Login using email + password
  * Calls: POST /auth/login
@@ -38,9 +48,7 @@ export async function loginWithEmailPassword(email: string, password: string) {
 
   // If login failed (401/400), backend returns { error: "..." }
   if (!res.ok) {
-    const data = await res.json().catch(() => null);
-    const message = data?.error ?? "Login failed";
-    throw new Error(message);
+    throw new Error(await readApiError(res, "Login failed"));
   }
 
   // If ok, parse response: { token, user: { id, name, role } }
@@ -67,9 +75,7 @@ export async function loginWithPin(pin: string) {
   });
 
   if (!res.ok) {
-    const data = await res.json().catch(() => null);
-    const message = data?.error ?? "Invalid PIN";
-    throw new Error(message);
+    throw new Error(await readApiError(res, "Invalid PIN"));
   }
 
   // Same response shape: { token, user: { id, name, role } }

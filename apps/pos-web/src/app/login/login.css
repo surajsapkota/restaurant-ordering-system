@@ -50,12 +50,16 @@
   display: inline-flex;
   align-items: center;
   padding: 10px 14px;
-  border-radius: 16px;
+  border-radius: 12px;
   background: rgba(255,255,255,.70);
   border: 1px solid rgba(26,18,7,.10);
   backdrop-filter: blur(8px);
   margin-bottom: 28px;
   box-shadow: 0 8px 24px rgba(0,0,0,.07);
+}
+
+.mobileLoginSwitch {
+  display: none;
 }
 
 .eyebrow {
@@ -88,7 +92,7 @@
 /* gradient border card */
 .card {
   position: relative;
-  border-radius: 24px;
+  border-radius: 18px;
   padding: 2.5px;
   background: linear-gradient(135deg, var(--saffron) 0%, var(--chili) 50%, var(--rose) 100%);
   box-shadow:
@@ -98,7 +102,7 @@
 }
 
 .card > * {
-  border-radius: 22px;
+  border-radius: 16px;
   background: var(--paper);
   padding: 28px;
 }
@@ -205,7 +209,7 @@
 
 /* Admin form card */
 .adminCardWrap {
-  border-radius: 20px;
+  border-radius: 16px;
   padding: 24px;
   background: rgba(255,255,255,.06);
   border: 1px solid rgba(255,255,255,.12);
@@ -225,7 +229,7 @@
 
 .chip {
   padding: 7px 13px;
-  border-radius: 999px;
+  border-radius: 12px;
   font-size: 12px;
   font-weight: 700;
   color: rgba(255,255,255,.65);
@@ -371,6 +375,54 @@
 @media (max-width: 860px) {
   .shell { grid-template-columns: 1fr; }
   .right  { display: none; }
-  .left   { padding: 32px 24px; }
+  .left   {
+    min-height: 100vh;
+    justify-content: flex-start;
+    padding: 24px;
+    overflow-y: auto;
+  }
+  .left::before { display: none; }
+  .logoBox {
+    margin-bottom: 18px;
+    max-width: 210px;
+  }
+  .logoImg {
+    width: 170px;
+    height: auto;
+  }
+  .mobileLoginSwitch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 18px;
+    padding: 4px;
+    border-radius: 14px;
+    background: rgba(26,18,7,.08);
+    border: 1px solid rgba(26,18,7,.10);
+  }
+  .mobileLoginSwitch button {
+    min-height: 42px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: rgba(26,18,7,.70);
+    font-weight: 900;
+    cursor: pointer;
+  }
+  .mobileLoginSwitch button.active {
+    background: rgba(255,255,255,.96);
+    color: var(--ink);
+    box-shadow: 0 8px 18px rgba(0,0,0,.08);
+  }
   .title  { font-size: 38px; }
+  .subtitle { margin-bottom: 20px; }
+  .card,
+  .card > * {
+    width: 100%;
+    max-width: 400px;
+  }
+  .card > * { padding: 24px; }
+  .footer { margin-top: 18px; }
 }
