@@ -166,26 +166,25 @@ export async function printCashierReceiptText(text: string): Promise<void> {
   const filePath = path.join(os.tmpdir(), `receipt-${Date.now()}.txt`);
 
   const rawText =
-    "\x1B\x40" + // initialize printer
-    "\x1B\x61\x00" + // align left
+    "\x1B\x40" +
+    "\x1B\x61\x00" +
     text +
     "\n\n\n\n" +
-    "\x1D\x56\x00"; // cut paper
+    "\x1D\x56\x00";
 
   fs.writeFileSync(filePath, rawText, "binary");
 
-  return new Promise((resolve, reject) => {
-    execFile(
-      "cmd",
-      ["/c", `copy /B "${filePath}" "\\\\localhost\\${CASHIER_PRINTER_NAME}"`],
-      (error) => {
-        try {
-          fs.unlinkSync(filePath);
-        } catch {}
+  const printerPath = "\\\\localhost\\" + CASHIER_PRINTER_NAME;
+  const command = `copy /B "${filePath}" "${printerPath}"`;
 
-        if (error) return reject(error);
-        resolve();
-      }
-    );
+  return new Promise((resolve, reject) => {
+    execFile("cmd", ["/c", command], (error) => {
+      try {
+        fs.unlinkSync(filePath);
+      } catch {}
+
+      if (error) return reject(error);
+      resolve();
+    });
   });
 }
