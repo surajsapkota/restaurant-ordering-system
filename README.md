@@ -155,9 +155,37 @@ Order total:
 cd apps/api
 npm install
 
+import fs from "fs";
+import os from "os";
+import path from "path";
+import { execFile } from "child_process";
 
-# DATABASE_URL="postgresql://restaurant:restaurant_pw@localhost:5432/restaurant_dev?schema=public"
-JWT_SECRET="your_secret"
-PORT=3000
+const CASHIER_PRINTER_NAME = "Cashier";
 
-DATABASE_URL=postgresql://neondb_owner:npg_MyYbQ1PGjL0X@ep-flat-math-anpke1p4.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+export async function printCashierReceiptText(text: string): Promise<void> {
+  const filePath = path.join(os.tmpdir(), `receipt-${Date.now()}.txt`);
+
+  const rawText =
+    "\x1B\x40" + // initialize printer
+    "\x1B\x61\x00" + // align left
+    text +
+    "\n\n\n\n" +
+    "\x1D\x56\x00"; // cut paper
+
+  fs.writeFileSync(filePath, rawText, "binary");
+
+  return new Promise((resolve, reject) => {
+    execFile(
+      "cmd",
+      ["/c", `copy /B "${filePath}" "\\\\localhost\\${CASHIER_PRINTER_NAME}"`],
+      (error) => {
+        try {
+          fs.unlinkSync(filePath);
+        } catch {}
+
+        if (error) return reject(error);
+        resolve();
+      }
+    );
+  });
+}
