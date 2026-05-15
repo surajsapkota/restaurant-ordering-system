@@ -154,3 +154,10 @@ Order total:
 ```bash
 cd apps/api
 npm install
+
+
+# DATABASE_URL="postgresql://restaurant:restaurant_pw@localhost:5432/restaurant_dev?schema=public"
+JWT_SECRET="your_secret"
+PORT=3000
+
+DATABASE_URL=postgresql://neondb_owner:npg_MyYbQ1PGjL0X@ep-flat-math-anpke1p4.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
