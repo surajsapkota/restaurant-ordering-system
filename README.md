@@ -188,3 +188,5 @@ export async function printCashierReceiptText(text: string): Promise<void> {
     });
   });
 }
+
+...Pinter Worked
