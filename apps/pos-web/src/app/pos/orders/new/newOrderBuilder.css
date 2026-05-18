@@ -862,6 +862,7 @@
 .builderGrid{
   height: calc(100dvh - 250px);
   overflow: hidden;
+  min-height: 0;
 }
 
 .catPanel,
@@ -902,4 +903,31 @@
     display:flex;
     overflow-x:auto;
   }
+}
+
+/* ===== CART / REVIEW SCROLL FIX ===== */
+
+.builderGrid {
+  align-items: stretch;
+}
+
+.cartPanel {
+  max-height: 100%;
+  overflow-y: auto;
+  padding-bottom: 24px;
+}
+
+.cartList {
+  max-height: none;
+  overflow: visible;
+}
+
+.itemsPanel {
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.catPanel {
+  max-height: 100%;
+  overflow-y: auto;
 }
