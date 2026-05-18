@@ -505,6 +505,7 @@
   
   /* ============ RESPONSIVE ============ */
   @media (max-width: 1050px){
+    .builderGrid{ grid-template-columns: 1fr; }
     .itemsGrid{ grid-template-columns: 1fr; }
     .catList{
       display:flex;
@@ -849,76 +850,4 @@
   opacity: 0.45;
   cursor: not-allowed;
   transform: none;
-}
-
-
-/* ===== FINAL RESPONSIVE POS FIX ===== */
-
-.builderShell {
-  min-height: 100dvh;
-  overflow-x: hidden;
-  overflow-y: auto;
-}
-
-.builderGrid {
-  max-width: 1220px;
-  display: grid;
-  gap: 12px;
-}
-
-/* Large screens */
-@media (min-width: 1200px) {
-  .builderGrid {
-    grid-template-columns: 240px 1fr 340px;
-  }
-}
-
-/* Laptop + tablet landscape */
-@media (min-width: 900px) and (max-width: 1199px) {
-
-  .builderGrid {
-    grid-template-columns: 220px 1fr 300px;
-  }
-
-  .itemsGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .catBtn {
-    min-width: 0;
-  }
-}
-
-/* Tablet portrait + mobile */
-@media (max-width: 899px) {
-
-  .builderGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .catList {
-    display: flex;
-    overflow-x: auto;
-    overflow-y: hidden;
-    gap: 10px;
-  }
-
-  .catBtn {
-    min-width: 200px;
-  }
-
-  .itemsGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .cartPanel {
-    margin-top: 12px;
-  }
-}
-
-/* Internal scrolling */
-.catPanel,
-.itemsPanel,
-.cartPanel {
-  overflow-y: auto;
 }
