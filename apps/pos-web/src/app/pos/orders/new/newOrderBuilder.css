@@ -505,7 +505,6 @@
   
   /* ============ RESPONSIVE ============ */
   @media (max-width: 1050px){
-    .builderGrid{ grid-template-columns: 1fr; }
     .itemsGrid{ grid-template-columns: 1fr; }
     .catList{
       display:flex;
@@ -850,4 +849,57 @@
   opacity: 0.45;
   cursor: not-allowed;
   transform: none;
+}
+
+
+/* ===== TABLET / MONITOR FIX ===== */
+
+.builderShell{
+  height: calc(100dvh - 110px);
+  overflow: hidden;
+}
+
+.builderGrid{
+  height: calc(100dvh - 250px);
+  overflow: hidden;
+}
+
+.catPanel,
+.itemsPanel,
+.cartPanel{
+  overflow-y: auto;
+}
+
+/* Tablet */
+@media (max-width: 1050px){
+
+  .builderGrid{
+    grid-template-columns: 200px 1fr 280px;
+  }
+
+  .itemsGrid{
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Small tablet */
+@media (max-width: 820px){
+
+  .builderGrid{
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+
+  .cartPanel{
+    position: sticky;
+    bottom: 0;
+    max-height: 38dvh;
+    z-index: 20;
+    background: #fffdf8;
+  }
+
+  .catList{
+    display:flex;
+    overflow-x:auto;
+  }
 }
