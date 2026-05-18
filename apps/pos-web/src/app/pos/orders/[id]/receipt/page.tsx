@@ -99,25 +99,6 @@ export default function ReceiptPage() {
     loadOrder();
   }, [token, orderId]);
 
-  useEffect(() => {
-    if (!loading && order) {
-      const printTimer = setTimeout(() => {
-        window.print();
-      }, 500);
-  
-      const afterPrint = () => {
-        router.push("/pos/orders");
-      };
-  
-      window.addEventListener("afterprint", afterPrint);
-  
-      return () => {
-        clearTimeout(printTimer);
-        window.removeEventListener("afterprint", afterPrint);
-      };
-    }
-  }, [loading, order, router]);
-
   const subtotalCents = useMemo(() => {
     if (!order) return 0;
     if (typeof order.subtotalCents === "number") return order.subtotalCents;
@@ -169,9 +150,33 @@ export default function ReceiptPage() {
     <main className="receiptShell">
       <div className="receiptWrap">
         <div className="receiptActions noPrint">
-          <button className="softBtn" onClick={() => window.print()}>
-            Print Again
-          </button>
+        <button
+          className="softBtn"
+          onClick={async () => {
+            try {
+              const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/printer/cashier-receipt/${orderId}`,
+                {
+                  method: "GET",
+                }
+              );
+
+              const data = await res.json();
+
+              if (!res.ok || !data.success) {
+                alert(data.message || "Receipt print failed");
+                return;
+              }
+
+              alert("Receipt printed");
+            } catch (err) {
+              console.error(err);
+              alert("Could not connect to printer");
+            }
+          }}
+        >
+          Print Receipt
+        </button>
           <button className="softBtn" onClick={() => router.push("/pos/orders")}>
             Back to Orders
           </button>
