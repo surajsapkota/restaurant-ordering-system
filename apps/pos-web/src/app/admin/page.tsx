@@ -36,32 +36,30 @@ export default function AdminOverviewPage() {
   useEffect(() => {
     async function load() {
       if (!token) return;
+  
       try {
-        const [shiftRes, sessionsRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/shifts/current`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/employees/sessions/active`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
-
+        const shiftRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/shifts/current`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+  
         if (shiftRes.ok) {
           const data = await shiftRes.json();
           setShift(data.shift ?? null);
+          setSessions(data.shift?.staffClockedIn ?? []);
         }
-
-        if (sessionsRes.ok) {
-          const data = await sessionsRes.json();
-          setSessions(data.sessions ?? []);
-        }
-      } catch {
-        // ignore
+      } catch (error) {
+        console.error("Admin overview failed:", error);
       } finally {
         setLoading(false);
       }
     }
+  
     load();
+  
+    const interval = setInterval(load, 1000);
+  
+    return () => clearInterval(interval);
   }, [token]);
 
   return (

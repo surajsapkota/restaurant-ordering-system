@@ -26,6 +26,10 @@ function requireManagerOrAdmin(req: any, res: Response, next: any) {
  * Get current open store shift
  * GET /shifts/current
  */
+/**
+ * Get current open store shift
+ * GET /shifts/current
+ */
 router.get("/current", requireAuth, async (_req: any, res) => {
   try {
     const shift = await prisma.storeShift.findFirst({
@@ -50,7 +54,93 @@ router.get("/current", requireAuth, async (_req: any, res) => {
       },
     });
 
-    return res.json({ shift: shift ?? null });
+    if (!shift) {
+      return res.json({ shift: null });
+    }
+
+    // GET ALL PAID ORDERS FOR THIS SHIFT
+    const orders = await prisma.order.findMany({
+      where: {
+        storeShiftId: shift.id,
+        paymentStatus: PaymentStatus.PAID,
+      },
+      select: {
+        subtotalCents: true,
+        taxCents: true,
+        tipCents: true,
+        totalCents: true,
+        paymentMethod: true,
+      },
+    });
+
+    // CALCULATE LIVE TOTALS
+    const grossSalesCents = orders.reduce(
+      (sum, o) => sum + o.totalCents,
+      0
+    );
+
+    const taxCents = orders.reduce(
+      (sum, o) => sum + o.taxCents,
+      0
+    );
+
+    const tipCents = orders.reduce(
+      (sum, o) => sum + o.tipCents,
+      0
+    );
+
+    const cashSalesCents = orders
+      .filter((o) => o.paymentMethod === PaymentMethod.CASH)
+      .reduce((sum, o) => sum + o.totalCents, 0);
+
+    const cardSalesCents = orders
+      .filter((o) => o.paymentMethod === PaymentMethod.CARD)
+      .reduce((sum, o) => sum + o.totalCents, 0);
+
+    const orderCount = orders.length;
+
+    // ACTIVE EMPLOYEE SESSIONS
+    const staffClockedIn = await prisma.employeeSession.findMany({
+      where: {
+        logoutAt: null,
+        loginAt: {
+          gte: shift.openedAt,
+        },
+      },
+      select: {
+        id: true,
+        loginAt: true,
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+            employeeCode: true,
+          },
+        },
+      },
+      orderBy: {
+        loginAt: "asc",
+      },
+    });
+
+    return res.json({
+      shift: {
+        ...shift,
+
+        grossSalesCents,
+        taxCents,
+        tipCents,
+
+        cashSalesCents,
+        cardSalesCents,
+
+        orderCount,
+
+        staffClockedInCount: staffClockedIn.length,
+        staffClockedIn,
+      },
+    });
   } catch (error) {
     console.error("GET /shifts/current failed:", error);
     return res.status(500).json({ error: "Internal server error" });
