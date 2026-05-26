@@ -159,7 +159,22 @@ model MenuItem {
   category MenuCategory @relation(fields: [categoryId], references: [id])
 
   // Opposite relation
-  orderItems OrderItem[]
+  orderItems       OrderItem[]
+  modifierOptions MenuModifierOption[]
+}
+
+model MenuModifierOption {
+  id              String  @id @default(cuid())
+  menuItemId      String
+  name            String
+  priceDeltaCents Int     @default(0)
+  isActive        Boolean @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@index([menuItemId])
 }
 
 model Order {
@@ -169,6 +184,7 @@ model Order {
   tableNumber   String?
   customerName  String?
   customerPhone String?
+  customerNote  String?
   deliveryAddr  String?
   status        OrderStatus @default(NEW)
 

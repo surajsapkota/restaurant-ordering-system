@@ -7,6 +7,8 @@ import tablesRouter from "./routes/tables.routes";
 import cors from "cors";
 import employeesRoutes from "./routes/employees.routes";
 import printerRoutes from "./routes/printer.routes";
+import reportsRoutes from "./routes/reports.routes";
+import timeClockRoutes from "./routes/timeClock.routes";
 
 const app = express();
 
@@ -37,6 +39,8 @@ app.use("/orders", ordersRoutes);
 app.use("/tables", tablesRouter);
 app.use("/auth", authRoutes);
 app.use("/printer", printerRoutes);
+app.use("/reports", reportsRoutes);
+app.use("/time-clock", timeClockRoutes);
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "OK" });
 });

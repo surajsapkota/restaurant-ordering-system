@@ -1,7 +1,15 @@
 import { Router, Request, Response } from "express";
 import prisma from "../db/prisma";
+import { requireAuth } from "../middleware/requireAuth";
 
 const router = Router();
+
+function requireManagerOrAdmin(req: any, res: Response, next: () => void) {
+  if (req.user?.role !== "MANAGER" && req.user?.role !== "ADMIN") {
+    return res.status(403).json({ error: "Manager access is required" });
+  }
+  next();
+}
 
 /**
  * GET /menu
@@ -19,6 +27,12 @@ router.get("/", async (req: Request, res: Response) => {
         items: {
           where: showAll ? {} : { isActive: true },
           orderBy: { name: "asc" },
+          include: {
+            modifierOptions: {
+              where: showAll ? {} : { isActive: true },
+              orderBy: { name: "asc" },
+            },
+          },
         },
       },
     });
@@ -27,6 +41,48 @@ router.get("/", async (req: Request, res: Response) => {
   } catch (error) {
     console.error("❌ GET /menu failed:", error);
     return res.status(500).json({ error: "Failed to load menu" });
+  }
+});
+
+router.post("/:itemId/modifiers", requireAuth, requireManagerOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const itemId = String(req.params.itemId);
+    const { name, priceDeltaCents, isActive = true } = req.body;
+    const trimmedName = typeof name === "string" ? name.trim() : "";
+
+    if (!trimmedName) return res.status(400).json({ error: "Modifier name is required" });
+    if (!Number.isInteger(priceDeltaCents) || priceDeltaCents < 0) {
+      return res.status(400).json({ error: "Modifier price must be zero or greater" });
+    }
+
+    const modifier = await prisma.menuModifierOption.create({
+      data: { menuItemId: itemId, name: trimmedName, priceDeltaCents, isActive: Boolean(isActive) },
+    });
+    return res.status(201).json({ modifier });
+  } catch (error) {
+    console.error("POST /menu/:itemId/modifiers failed:", error);
+    return res.status(500).json({ error: "Failed to create modifier" });
+  }
+});
+
+router.patch("/modifiers/:id", requireAuth, requireManagerOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const { name, priceDeltaCents, isActive } = req.body;
+    const trimmedName = typeof name === "string" ? name.trim() : "";
+
+    if (!trimmedName) return res.status(400).json({ error: "Modifier name is required" });
+    if (!Number.isInteger(priceDeltaCents) || priceDeltaCents < 0 || typeof isActive !== "boolean") {
+      return res.status(400).json({ error: "Valid modifier price and status are required" });
+    }
+
+    const modifier = await prisma.menuModifierOption.update({
+      where: { id: String(req.params.id) },
+      data: { name: trimmedName, priceDeltaCents, isActive },
+    });
+    return res.json({ modifier });
+  } catch (error) {
+    console.error("PATCH /menu/modifiers/:id failed:", error);
+    return res.status(500).json({ error: "Failed to update modifier" });
   }
 });
 /**

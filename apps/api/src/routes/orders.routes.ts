@@ -19,10 +19,16 @@ function isManagerOrAdmin(role: string | undefined) {
 async function recomputeOrderTotals(orderId: string) {
   const items = await prisma.orderItem.findMany({
     where: { orderId },
-    select: { basePriceCents: true, qty: true },
+    select: { basePriceCents: true, qty: true, modifiers: { select: { priceDeltaCents: true } } },
   });
 
-  const subtotalCents = items.reduce((sum, it) => sum + it.basePriceCents * it.qty, 0);
+  const subtotalCents = items.reduce(
+    (sum, it) =>
+      sum +
+      (it.basePriceCents + it.modifiers.reduce((modifierSum, modifier) => modifierSum + modifier.priceDeltaCents, 0)) *
+        it.qty,
+    0
+  );
   const taxCents = Math.round(subtotalCents * TAX_RATE);
 
   return {
@@ -68,7 +74,7 @@ router.get("/", requireAuth, async (req: any, res: Response) => {
     const orders = await prisma.order.findMany({
       where: whereFilter,
       orderBy: { createdAt: "desc" },
-      include: { items: true },
+      include: { items: { include: { modifiers: true } } },
     });
 
     return res.status(200).json({ orders, filtersUsed: whereFilter });
@@ -88,16 +94,17 @@ router.post("/:id/items", requireAuth, async (req: any, res: Response) => {
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      include: { items: true },
+      include: { items: { include: { modifiers: true } } },
     });
 
     if (!order) return res.status(404).json({ error: "Order not found" });
     if (order.status === "CLOSED") return res.status(400).json({ error: "Order is CLOSED" });
 
     // Fetch menu items (validate ids)
-    const menuItemIds = items.map((it: any) => it.menuItemId);
+    const menuItemIds = Array.from(new Set(items.map((it: any) => String(it.menuItemId))));
     const menuItems = await prisma.menuItem.findMany({
       where: { id: { in: menuItemIds }, isActive: true },
+      include: { modifierOptions: { where: { isActive: true } } },
     });
 
     if (menuItems.length !== menuItemIds.length) {
@@ -105,6 +112,23 @@ router.post("/:id/items", requireAuth, async (req: any, res: Response) => {
     }
 
     const menuItemMap = new Map(menuItems.map((m) => [m.id, m]));
+    const selectedModifiers = new Map<any, Array<{ name: string; priceDeltaCents: number }>>();
+
+    for (const it of items) {
+      const menuItem = menuItemMap.get(it.menuItemId);
+      const requestedIds = Array.from(
+        new Set(
+          Array.isArray(it.modifiers)
+            ? it.modifiers.map((modifier: any) => String(modifier.id ?? "")).filter(Boolean)
+            : []
+        )
+      );
+      const selected = menuItem?.modifierOptions.filter((modifier) => requestedIds.includes(modifier.id)) ?? [];
+      if (selected.length !== requestedIds.length) {
+        return res.status(400).json({ error: "One or more modifiers are invalid or inactive" });
+      }
+      selectedModifiers.set(it, selected);
+    }
 
     const newlyAddedItemsForPrint: any[] = [];
 
@@ -129,23 +153,46 @@ router.post("/:id/items", requireAuth, async (req: any, res: Response) => {
             orderId,
             menuItemId: menuItem.id,
             nameSnapshot: menuItem.name,
-            basePriceCents: menuItem.priceCents + Number(it.extraCents ?? 0),
+            basePriceCents: menuItem.priceCents + (it.sideChoice === "Garlic Naan" ? 100 : 0),
             qty,
             notes: notesText.trim() ? notesText.trim() : null,
           },
         });
+
+        const modifiers = selectedModifiers.get(it) ?? [];
+        if (modifiers.length > 0) {
+          await tx.orderItemModifier.createMany({
+            data: modifiers.map((modifier) => ({
+              orderItemId: createdItem.id,
+              nameSnapshot: modifier.name,
+              priceDeltaCents: modifier.priceDeltaCents,
+            })),
+          });
+        }
     
-        newlyAddedItemsForPrint.push(createdItem);
+        newlyAddedItemsForPrint.push({
+          ...createdItem,
+          modifiers: modifiers.map((modifier) => ({
+            nameSnapshot: modifier.name,
+            priceDeltaCents: modifier.priceDeltaCents,
+          })),
+        });
       }
 
 
       // recompute totals from DB
       const dbItems = await tx.orderItem.findMany({
         where: { orderId },
-        select: { basePriceCents: true, qty: true },
+        select: { basePriceCents: true, qty: true, modifiers: { select: { priceDeltaCents: true } } },
       });
 
-      const subtotalCents = dbItems.reduce((sum, it) => sum + it.basePriceCents * it.qty, 0);
+      const subtotalCents = dbItems.reduce(
+        (sum, it) =>
+          sum +
+          (it.basePriceCents + it.modifiers.reduce((modifierSum, modifier) => modifierSum + modifier.priceDeltaCents, 0)) *
+            it.qty,
+        0
+      );
       const taxCents = Math.round(subtotalCents * TAX_RATE);
       const totalCents = subtotalCents + taxCents + (order.tipCents ?? 0);
 
@@ -160,7 +207,7 @@ router.post("/:id/items", requireAuth, async (req: any, res: Response) => {
           status: nextStatus,
           ...(sendToKitchen ? { sentToKitchenAt: new Date() } : {}),
         },
-        include: { items: true },
+        include: { items: { include: { modifiers: true } } },
       });
     });
 
@@ -204,6 +251,7 @@ router.post("/", requireAuth, async (req: any, res: Response) => {
       tableNumber,
       customerName,
       customerPhone,
+      customerNote,
       deliveryAddr,
       tipDollars,
       items,
@@ -229,6 +277,14 @@ router.post("/", requireAuth, async (req: any, res: Response) => {
       return res.status(400).json({ error: "items must be a non-empty array" });
     }
 
+    if (
+      (type === OrderType.TAKEOUT || type === OrderType.DELIVERY) &&
+      (typeof customerName !== "string" || !customerName.trim() ||
+        typeof customerPhone !== "string" || !customerPhone.trim())
+    ) {
+      return res.status(400).json({ error: "Customer name and phone number are required" });
+    }
+
     // normalize tableNumber into string (your schema uses text)
     const tableNumberStr =
       type === OrderType.DINE_IN && tableNumber != null && String(tableNumber).trim()
@@ -249,10 +305,11 @@ router.post("/", requireAuth, async (req: any, res: Response) => {
     }
 
     // ---- fetch menu items ----
-    const menuItemIds = items.map((it: any) => it.menuItemId);
+    const menuItemIds = Array.from(new Set(items.map((it: any) => String(it.menuItemId))));
 
     const menuItems = await prisma.menuItem.findMany({
       where: { id: { in: menuItemIds }, isActive: true },
+      include: { modifierOptions: { where: { isActive: true } } },
     });
 
     if (menuItems.length !== menuItemIds.length) {
@@ -260,6 +317,7 @@ router.post("/", requireAuth, async (req: any, res: Response) => {
     }
 
     const menuItemMap = new Map(menuItems.map((m) => [m.id, m]));
+    const selectedModifiers = new Map<any, Array<{ name: string; priceDeltaCents: number }>>();
 
     // Validate qty and compute subtotal for JUST the new items
     let newItemsSubtotalCents = 0;
@@ -273,7 +331,22 @@ router.post("/", requireAuth, async (req: any, res: Response) => {
       const menuItem = menuItemMap.get(it.menuItemId);
       if (!menuItem) return res.status(400).json({ error: "Invalid menuItemId in items" });
 
-      newItemsSubtotalCents += menuItem.priceCents * qty;
+      const requestedIds = Array.from(
+        new Set(
+          Array.isArray(it.modifiers)
+            ? it.modifiers.map((modifier: any) => String(modifier.id ?? "")).filter(Boolean)
+            : []
+        )
+      );
+      const modifiers = menuItem.modifierOptions.filter((modifier) => requestedIds.includes(modifier.id));
+      if (modifiers.length !== requestedIds.length) {
+        return res.status(400).json({ error: "One or more modifiers are invalid or inactive" });
+      }
+      selectedModifiers.set(it, modifiers);
+
+      const sideUpchargeCents = it.sideChoice === "Garlic Naan" ? 100 : 0;
+      const modifierCents = modifiers.reduce((sum, modifier) => sum + modifier.priceDeltaCents, 0);
+      newItemsSubtotalCents += (menuItem.priceCents + sideUpchargeCents + modifierCents) * qty;
     }
 
     const createdOrUpdated = await prisma.$transaction(async (tx) => {
@@ -308,25 +381,41 @@ router.post("/", requireAuth, async (req: any, res: Response) => {
           const qty = Number(it.qty ?? 1);
           const menuItem = menuItemMap.get(it.menuItemId)!;
 
-          await tx.orderItem.create({
+          const createdItem = await tx.orderItem.create({
             data: {
               orderId: existingOrder.id,
               menuItemId: menuItem.id,
               nameSnapshot: menuItem.name,
-              basePriceCents: menuItem.priceCents,
+              basePriceCents: menuItem.priceCents + (it.sideChoice === "Garlic Naan" ? 100 : 0),
               qty,
               notes: typeof it.notes === "string" && it.notes.trim() ? it.notes.trim() : null,
             },
           });
+          const modifiers = selectedModifiers.get(it) ?? [];
+          if (modifiers.length > 0) {
+            await tx.orderItemModifier.createMany({
+              data: modifiers.map((modifier) => ({
+                orderItemId: createdItem.id,
+                nameSnapshot: modifier.name,
+                priceDeltaCents: modifier.priceDeltaCents,
+              })),
+            });
+          }
         }
 
         // Recompute totals from DB (safe & accurate)
         const allItems = await tx.orderItem.findMany({
           where: { orderId: existingOrder.id },
-          select: { basePriceCents: true, qty: true },
+          select: { basePriceCents: true, qty: true, modifiers: { select: { priceDeltaCents: true } } },
         });
 
-        const subtotalCents = allItems.reduce((sum, it) => sum + it.basePriceCents * it.qty, 0);
+        const subtotalCents = allItems.reduce(
+          (sum, it) =>
+            sum +
+            (it.basePriceCents + it.modifiers.reduce((modifierSum, modifier) => modifierSum + modifier.priceDeltaCents, 0)) *
+              it.qty,
+          0
+        );
         const taxCents = Math.round(subtotalCents * TAX_RATE);
         const tipCents = existingOrder.tipCents ?? 0;
         const totalCents = subtotalCents + taxCents + tipCents;
@@ -342,7 +431,7 @@ router.post("/", requireAuth, async (req: any, res: Response) => {
             status: OrderStatus.NEW,
             sentToKitchenAt: null, // reset because this is a “new send”
           },
-          include: { items: true },
+          include: { items: { include: { modifiers: true } } },
         });
 
         return { mode: "APPENDED", order: updated };
@@ -367,8 +456,9 @@ router.post("/", requireAuth, async (req: any, res: Response) => {
           orderNumber: nextOrderNumber,
           type: type as OrderType,
           tableNumber: tableNumberStr,
-          customerName: customerName ?? null,
-          customerPhone: customerPhone ?? null,
+          customerName: typeof customerName === "string" ? customerName.trim() || null : null,
+          customerPhone: typeof customerPhone === "string" ? customerPhone.trim() || null : null,
+          customerNote: typeof customerNote === "string" ? customerNote.trim() || null : null,
           deliveryAddr: deliveryAddr ?? null,
 
           subtotalCents: newItemsSubtotalCents,
@@ -389,21 +479,31 @@ router.post("/", requireAuth, async (req: any, res: Response) => {
         const qty = Number(it.qty ?? 1);
         const menuItem = menuItemMap.get(it.menuItemId)!;
 
-        await tx.orderItem.create({
+        const createdItem = await tx.orderItem.create({
           data: {
             orderId: order.id,
             menuItemId: menuItem.id,
             nameSnapshot: menuItem.name,
-            basePriceCents: menuItem.priceCents,
+            basePriceCents: menuItem.priceCents + (it.sideChoice === "Garlic Naan" ? 100 : 0),
             qty,
             notes: typeof it.notes === "string" && it.notes.trim() ? it.notes.trim() : null,
           },
         });
+        const modifiers = selectedModifiers.get(it) ?? [];
+        if (modifiers.length > 0) {
+          await tx.orderItemModifier.createMany({
+            data: modifiers.map((modifier) => ({
+              orderItemId: createdItem.id,
+              nameSnapshot: modifier.name,
+              priceDeltaCents: modifier.priceDeltaCents,
+            })),
+          });
+        }
       }
 
       const created = await tx.order.findUnique({
         where: { id: order.id },
-        include: { items: true },
+        include: { items: { include: { modifiers: true } } },
       });
 
       return { mode: "CREATED", order: created };
@@ -448,7 +548,7 @@ router.patch("/:id/status", requireAuth, async (req: any, res: Response) => {
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
       data: { status, ...extraUpdates },
-      include: { items: true },
+      include: { items: { include: { modifiers: true } } },
     });
     
     if (status === "IN_KITCHEN") {
@@ -727,7 +827,10 @@ router.get("/:id", requireAuth, async (req: any, res: Response) => {
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      include: { items: true },
+      include: {
+        items: { include: { modifiers: true } },
+        payments: true,
+      },
     });
 
     if (!order) return res.status(404).json({ error: "Order not found" });

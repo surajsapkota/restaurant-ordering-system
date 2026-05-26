@@ -9,11 +9,18 @@ type KitchenOrder = {
   type: string;
   tableNumber?: string | null;
   customerName?: string | null;
+  customerPhone?: string | null;
+  deliveryAddr?: string | null;
+  customerNote?: string | null;
   createdAt?: Date;
   items: {
     qty: number;
     nameSnapshot: string;
     notes?: string | null;
+    modifiers?: {
+      nameSnapshot: string;
+      priceDeltaCents: number;
+    }[];
   }[];
 };
 
@@ -97,9 +104,9 @@ export async function printKitchenTicket(order: KitchenOrder) {
   chunks.push(ESC.init);
 
   // ── HEADER: Order Type ─────────────────────────────────────────────────────
-  // Big and bold — tells staff at a glance what kind of order this is
+  // Keep the ticket type prominent without making each item oversized.
   chunks.push(ESC.alignCenter);
-  chunks.push(ESC.huge);
+  chunks.push(ESC.large);
   chunks.push(ESC.boldOn);
   chunks.push(txt(`${typeLabel}\n`));
   chunks.push(ESC.boldOff);
@@ -122,6 +129,15 @@ export async function printKitchenTicket(order: KitchenOrder) {
   }
 
   chunks.push(ESC.normal);
+  if (order.customerPhone) {
+    chunks.push(txt(`PHONE   ${order.customerPhone}\n`));
+  }
+  if (order.deliveryAddr) {
+    chunks.push(txt(`ADDRESS ${order.deliveryAddr}\n`));
+  }
+  if (order.customerNote) {
+    chunks.push(txt(`NOTE    ${order.customerNote}\n`));
+  }
   chunks.push(txt(`TIME    ${timeText}\n`));
 
   chunks.push(line("-"));
@@ -137,18 +153,22 @@ export async function printKitchenTicket(order: KitchenOrder) {
     chunks.push(ESC.normal);
     chunks.push(txt(`ITEM ${i + 1} of ${order.items.length}\n`));
 
-    // Item name — large and bold, easy to read across the pass
-    chunks.push(ESC.large);
+    // The dish is bold; additions and instructions stay plain and smaller.
+    chunks.push(ESC.normal);
     chunks.push(ESC.boldOn);
-    chunks.push(txt(`${item.qty}x ${item.nameSnapshot.toUpperCase()}\n`));
+    chunks.push(txt(`${item.qty}x ${item.nameSnapshot}\n`));
     chunks.push(ESC.boldOff);
 
-    // Notes — medium, NOT bold, clearly subordinate to the item name
+    for (const modifier of item.modifiers ?? []) {
+      chunks.push(ESC.normal);
+      chunks.push(txt(`  + ${modifier.nameSnapshot}\n`));
+    }
+
     if (item.notes) {
       const noteLines = item.notes.split("\n").filter(Boolean);
-      chunks.push(ESC.medium);
+      chunks.push(ESC.normal);
       for (const note of noteLines) {
-        chunks.push(txt(`  > ${note}\n`));          // Lowercase, indented
+        chunks.push(txt(`  - ${note}\n`));
       }
     }
 
@@ -189,6 +209,7 @@ router.get("/test", async (_req: Request, res: Response) => {
           qty: 2,
           nameSnapshot: "Butter Chicken",
           notes: "No spice\nExtra sauce",
+          modifiers: [{ nameSnapshot: "Extra Chicken", priceDeltaCents: 300 }],
         },
         {
           qty: 1,

@@ -42,7 +42,7 @@ async function checkAndPrint() {
       status: "IN_KITCHEN",
     },
     include: {
-      items: true,
+      items: { include: { modifiers: true } },
     },
     orderBy: {
       updatedAt: "asc",

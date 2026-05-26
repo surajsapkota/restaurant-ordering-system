@@ -22,6 +22,26 @@ function requireManagerOrAdmin(req: any, res: Response, next: any) {
   next();
 }
 
+function requireAdmin(req: any, res: Response, next: any) {
+  if (req.user?.role !== "ADMIN") {
+    return res.status(403).json({ error: "Only admin can manage time records" });
+  }
+
+  next();
+}
+
+function parseDateStart(value: string | undefined) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function addDays(date: Date, days: number) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+
 /**
  * Get current open store shift
  * GET /shifts/current
@@ -148,6 +168,241 @@ router.get("/current", requireAuth, async (_req: any, res) => {
 });
 
 /**
+ * Get orders and payment details for the currently open shift.
+ * GET /shifts/current/transactions
+ */
+router.get("/current/transactions", requireAuth, requireManagerOrAdmin, async (_req: any, res) => {
+  try {
+    const shift = await prisma.storeShift.findFirst({
+      where: { status: ShiftStatus.OPEN },
+      orderBy: { openedAt: "desc" },
+      select: { id: true },
+    });
+
+    if (!shift) {
+      return res.json({ shiftId: null, orders: [] });
+    }
+
+    const orders = await prisma.order.findMany({
+      where: { storeShiftId: shift.id },
+      orderBy: { createdAt: "desc" },
+      include: {
+        items: true,
+        payments: true,
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            employeeCode: true,
+          },
+        },
+      },
+    });
+
+    return res.json({ shiftId: shift.id, orders });
+  } catch (error) {
+    console.error("GET /shifts/current/transactions failed:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
+ * Clock out an active employee session from manager controls.
+ * POST /shifts/sessions/:sessionId/clock-out
+ */
+router.post("/sessions/:sessionId/clock-out", requireAuth, requireManagerOrAdmin, async (req: any, res) => {
+  try {
+    const sessionId = String(req.params.sessionId);
+    const session = await prisma.employeeSession.findUnique({
+      where: { id: sessionId },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            employeeCode: true,
+          },
+        },
+      },
+    });
+
+    if (!session) {
+      return res.status(404).json({ error: "Employee session not found" });
+    }
+
+    if (session.logoutAt) {
+      return res.status(400).json({ error: "Employee is already clocked out" });
+    }
+
+    const logoutAt = new Date();
+    const workedMinutes = Math.max(
+      0,
+      Math.round((logoutAt.getTime() - session.loginAt.getTime()) / 1000 / 60)
+    );
+
+    const updated = await prisma.employeeSession.update({
+      where: { id: sessionId },
+      data: { logoutAt },
+      select: {
+        id: true,
+        loginAt: true,
+        logoutAt: true,
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            employeeCode: true,
+          },
+        },
+      },
+    });
+
+    return res.json({
+      message: "Employee clocked out successfully",
+      session: { ...updated, workedMinutes },
+    });
+  } catch (error) {
+    console.error("POST /shifts/sessions/:sessionId/clock-out failed:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
+ * Get employee attendance records for admin review.
+ * GET /shifts/sessions?from=YYYY-MM-DD&to=YYYY-MM-DD
+ */
+router.get("/sessions", requireAuth, requireAdmin, async (req: any, res) => {
+  try {
+    const fromDate = parseDateStart(String(req.query.from ?? ""));
+    const toDate = parseDateStart(String(req.query.to ?? ""));
+
+    if (!fromDate || !toDate) {
+      return res.status(400).json({ error: "from and to are required in YYYY-MM-DD format" });
+    }
+
+    const endDateExclusive = addDays(toDate, 1);
+    if (fromDate >= endDateExclusive) {
+      return res.status(400).json({ error: "from date cannot be after to date" });
+    }
+
+    const sessions = await prisma.employeeSession.findMany({
+      where: {
+        OR: [
+          {
+            loginAt: {
+              gte: fromDate,
+              lt: endDateExclusive,
+            },
+          },
+          { logoutAt: null },
+        ],
+      },
+      orderBy: { loginAt: "desc" },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            employeeCode: true,
+            role: true,
+          },
+        },
+        storeShift: {
+          select: {
+            id: true,
+            terminalCode: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    const items = sessions.map((session) => {
+      const endTime = session.logoutAt?.getTime() ?? Date.now();
+      const workedMinutes = Math.max(
+        0,
+        Math.round((endTime - session.loginAt.getTime()) / 1000 / 60) - session.breakMinutes
+      );
+
+      return { ...session, workedMinutes };
+    });
+
+    return res.json({
+      items,
+      activeCount: items.filter((session) => !session.logoutAt).length,
+      totalWorkedMinutes: items
+        .filter((session) => session.logoutAt)
+        .reduce((sum, session) => sum + session.workedMinutes, 0),
+    });
+  } catch (error) {
+    console.error("GET /shifts/sessions failed:", error);
+    return res.status(500).json({ error: "Failed to load employee time records" });
+  }
+});
+
+/**
+ * Correct an attendance record.
+ * PATCH /shifts/sessions/:sessionId
+ */
+router.patch("/sessions/:sessionId", requireAuth, requireAdmin, async (req: any, res) => {
+  try {
+    const sessionId = String(req.params.sessionId);
+    const existing = await prisma.employeeSession.findUnique({ where: { id: sessionId } });
+    if (!existing) {
+      return res.status(404).json({ error: "Time record not found" });
+    }
+
+    const { loginAt, logoutAt, breakMinutes, notes } = req.body as {
+      loginAt?: string;
+      logoutAt?: string | null;
+      breakMinutes?: number;
+      notes?: string;
+    };
+
+    const correctedLoginAt = loginAt ? new Date(loginAt) : existing.loginAt;
+    const correctedLogoutAt =
+      logoutAt === null ? null : logoutAt ? new Date(logoutAt) : existing.logoutAt;
+
+    if (Number.isNaN(correctedLoginAt.getTime()) || (correctedLogoutAt && Number.isNaN(correctedLogoutAt.getTime()))) {
+      return res.status(400).json({ error: "Invalid date/time value" });
+    }
+
+    if (correctedLogoutAt && correctedLogoutAt < correctedLoginAt) {
+      return res.status(400).json({ error: "Clock out must be after clock in" });
+    }
+
+    if (breakMinutes !== undefined && (!Number.isInteger(breakMinutes) || breakMinutes < 0)) {
+      return res.status(400).json({ error: "Break minutes must be zero or greater" });
+    }
+
+    const session = await prisma.employeeSession.update({
+      where: { id: sessionId },
+      data: {
+        loginAt: correctedLoginAt,
+        logoutAt: correctedLogoutAt,
+        ...(breakMinutes !== undefined ? { breakMinutes } : {}),
+        ...(notes !== undefined ? { notes: notes.trim() || null } : {}),
+      },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            employeeCode: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    return res.json({ item: session });
+  } catch (error) {
+    console.error("PATCH /shifts/sessions/:sessionId failed:", error);
+    return res.status(500).json({ error: "Failed to update employee time record" });
+  }
+});
+
+/**
  * Open store shift
  * POST /shifts/open
  * Body: { terminalCode, openingCashCents? }
@@ -267,30 +522,39 @@ router.post("/close", requireAuth, requireManagerOrAdmin, async (req: any, res) 
 
     const orderCount = orders.length;
 
-    const closedShift = await prisma.storeShift.update({
-      where: { id: shift.id },
-      data: {
-        status: ShiftStatus.CLOSED,
-        closedAt: new Date(),
-        closedById: req.user.id,
-        closingCashCents: Number.isFinite(closingCashCents)
-          ? Math.max(0, closingCashCents as number)
-          : 0,
+    const closedAt = new Date();
+    const [closedShift, autoClockOut] = await prisma.$transaction([
+      prisma.storeShift.update({
+        where: { id: shift.id },
+        data: {
+          status: ShiftStatus.CLOSED,
+          closedAt,
+          closedById: req.user.id,
+          closingCashCents: Number.isFinite(closingCashCents)
+            ? Math.max(0, closingCashCents as number)
+            : 0,
 
-        grossSalesCents,
-        netSalesCents,
-        taxCents,
-        tipCents,
-        discountCents,
-        cashSalesCents,
-        cardSalesCents,
-        orderCount,
-      },
-    });
+          grossSalesCents,
+          netSalesCents,
+          taxCents,
+          tipCents,
+          discountCents,
+          cashSalesCents,
+          cardSalesCents,
+          orderCount,
+        },
+      }),
+      prisma.employeeSession.updateMany({
+        where: { logoutAt: null },
+        data: { logoutAt: closedAt },
+      }),
+    ]);
 
     return res.json({
-      message: "Shift closed successfully",
+      message: "Day closed successfully",
       shift: closedShift,
+      autoClockedOutCount: autoClockOut.count,
+      autoClockedOutAt: closedAt,
     });
   } catch (error) {
     console.error("POST /shifts/close failed:", error);

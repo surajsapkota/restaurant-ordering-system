@@ -126,17 +126,30 @@ router.get("/me", requireAuth, async (req: any, res) => {
         },
       });
   
-      const employeeSession = await prisma.employeeSession.create({
-        data: {
-          employeeId: user.id,
-          storeShiftId: activeShift?.id ?? null,
-        },
-        select: {
-          id: true,
-          loginAt: true,
-          storeShiftId: true,
-        },
-      });
+      const employeeSession =
+        (await prisma.employeeSession.findFirst({
+          where: {
+            employeeId: user.id,
+            logoutAt: null,
+          },
+          orderBy: { loginAt: "desc" },
+          select: {
+            id: true,
+            loginAt: true,
+            storeShiftId: true,
+          },
+        })) ??
+        (await prisma.employeeSession.create({
+          data: {
+            employeeId: user.id,
+            storeShiftId: activeShift?.id ?? null,
+          },
+          select: {
+            id: true,
+            loginAt: true,
+            storeShiftId: true,
+          },
+        }));
   
       return res.json({
         token,
@@ -154,6 +167,48 @@ router.get("/me", requireAuth, async (req: any, res) => {
       return res.status(500).json({ error: "Internal server error" });
     }
   });
+
+// POST /auth/manager-access
+// Returns temporary manager authorization while preserving the employee POS session.
+router.post("/manager-access", requireAuth, async (req: any, res) => {
+  try {
+    const { managerId, code } = req.body as {
+      managerId?: string;
+      code?: string;
+    };
+
+    if (!managerId?.trim() || !code?.trim()) {
+      return res.status(400).json({ error: "managerId and code are required" });
+    }
+
+    const manager = await prisma.user.findFirst({
+      where: {
+        employeeCode: managerId.trim(),
+        role: { in: ["MANAGER", "ADMIN"] },
+        isActive: true,
+      },
+    });
+
+    if (!manager?.pinHash || !(await verifySecret(code.trim(), manager.pinHash))) {
+      return res.status(401).json({ error: "Invalid manager ID or code" });
+    }
+
+    const token = signToken({ userId: manager.id, role: manager.role });
+
+    return res.json({
+      token,
+      user: {
+        id: manager.id,
+        name: manager.name,
+        role: manager.role,
+        employeeCode: manager.employeeCode,
+      },
+    });
+  } catch (error) {
+    console.error("POST /auth/manager-access failed:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // POST /auth/logout
 router.post("/logout", requireAuth, async (req: any, res) => {
