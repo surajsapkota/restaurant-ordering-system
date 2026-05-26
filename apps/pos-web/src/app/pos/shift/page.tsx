@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuthStore } from "@/lib/auth/authstore";
 import { useRouter } from "next/navigation";
 import "./shift.css";
@@ -33,8 +33,9 @@ export default function ShiftPage() {
   const [openingCash, setOpeningCash] = useState("");
   const [closingCash, setClosingCash] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  async function loadShift() {
+  const loadShift = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -49,15 +50,16 @@ export default function ShiftPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [token]);
 
   useEffect(() => {
     if (token) loadShift();
-  }, [token]);
+  }, [token, loadShift]);
 
   async function openShift() {
     setSubmitting(true);
     setError(null);
+    setNotice(null);
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/shifts/open`, {
         method: "POST",
@@ -85,6 +87,7 @@ export default function ShiftPage() {
     if (!shift) return;
     setSubmitting(true);
     setError(null);
+    setNotice(null);
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/shifts/close`, {
         method: "POST",
@@ -101,6 +104,7 @@ export default function ShiftPage() {
       if (!res.ok) throw new Error(data.error ?? "Failed to close shift");
       setClosingCash("");
       await loadShift();
+      setNotice(`Day closed. ${data.autoClockedOutCount ?? 0} employees automatically clocked out.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to close shift");
     } finally {
@@ -301,6 +305,7 @@ export default function ShiftPage() {
       )}
 
       {error && <div className="shiftError">{error}</div>}
+      {notice && <div className="shiftSuccess">{notice}</div>}
 
     </div>
   );

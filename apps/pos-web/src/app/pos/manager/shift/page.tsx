@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuthStore } from "@/lib/auth/authstore";
+import { useRouter } from "next/navigation";
 import "./shift.css";
 
 type Shift = {
@@ -15,7 +16,13 @@ function centsToDollars(cents: number) {
 }
 
 export default function ManagerShiftPage() {
+  const router = useRouter();
   const token = useAuthStore((s) => s.token);
+  const user = useAuthStore((s) => s.user);
+  const managerAccessToken = useAuthStore((s) => s.managerAccessToken);
+  const clearManagerAccess = useAuthStore((s) => s.clearManagerAccess);
+  const isLoggedInManager = user?.role === "MANAGER" || user?.role === "ADMIN";
+  const managerToken = isLoggedInManager ? token : managerAccessToken;
 
   const [loading, setLoading] = useState(true);
   const [shift, setShift] = useState<Shift | null>(null);
@@ -24,41 +31,47 @@ export default function ManagerShiftPage() {
   const [openingCash, setOpeningCash] = useState("");
   const [closingCash, setClosingCash] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  async function loadCurrentShift() {
+  const loadCurrentShift = useCallback(async () => {
+    if (!managerToken) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/shifts/current`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${managerToken}` },
       });
 
       if (!res.ok) throw new Error("Failed to load shift");
 
       const data = await res.json();
       setShift(data.shift);
-    } catch (e) {
+    } catch {
       setError("Could not load shift status");
     } finally {
       setLoading(false);
     }
-  }
+  }, [managerToken]);
 
   useEffect(() => {
     loadCurrentShift();
-  }, []);
+  }, [loadCurrentShift]);
 
   async function openShift() {
     setSubmitting(true);
     setError(null);
+    setNotice(null);
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/shifts/open`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${managerToken}`,
         },
         body: JSON.stringify({
           terminalCode: "TABLET-1",
@@ -85,13 +98,14 @@ export default function ManagerShiftPage() {
 
     setSubmitting(true);
     setError(null);
+    setNotice(null);
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/shifts/close`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${managerToken}`,
         },
         body: JSON.stringify({
           shiftId: shift.id,
@@ -99,13 +113,14 @@ export default function ManagerShiftPage() {
         }),
       });
 
+      const body = await res.json();
       if (!res.ok) {
-        const body = await res.json();
         throw new Error(body?.error ?? "Failed to close shift");
       }
 
       await loadCurrentShift();
       setClosingCash("");
+      setNotice(`Day closed. ${body.autoClockedOutCount ?? 0} employees automatically clocked out.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to close shift");
     } finally {
@@ -115,11 +130,22 @@ export default function ManagerShiftPage() {
 
   return (
     <main className="shiftShell">
+      <button
+        className="primaryBtn"
+        onClick={() => {
+          clearManagerAccess();
+          router.push("/pos");
+        }}
+        type="button"
+      >
+        Back to POS
+      </button>
       <h1 className="shiftTitle">Shift Management</h1>
 
+      {!managerToken && <div className="shiftError">Manager authorization is required.</div>}
       {loading && <div className="shiftCard">Loading shift status…</div>}
 
-      {!loading && !shift && (
+      {!loading && managerToken && !shift && (
         <div className="shiftCard">
           <h2>No Shift Open</h2>
           <p>The restaurant is currently closed.</p>
@@ -139,7 +165,7 @@ export default function ManagerShiftPage() {
         </div>
       )}
 
-      {!loading && shift && (
+      {!loading && managerToken && shift && (
         <div className="shiftCard">
           <h2>Shift Open</h2>
 
@@ -171,6 +197,7 @@ export default function ManagerShiftPage() {
       )}
 
       {error && <div className="shiftError">{error}</div>}
+      {notice && <div className="shiftSuccess">{notice}</div>}
     </main>
   );
 }

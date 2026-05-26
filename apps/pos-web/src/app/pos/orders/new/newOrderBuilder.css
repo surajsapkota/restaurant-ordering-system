@@ -29,6 +29,7 @@
   .builderShell{
     min-height: calc(100vh - 110px);
     padding: 22px 18px 32px;
+    overflow-x: hidden;
     background:
       radial-gradient(1200px 700px at 20% 10%, var(--bg2), transparent 60%),
       radial-gradient(900px 600px at 85% 25%, #ffdca0, transparent 55%),
@@ -37,7 +38,9 @@
   
   /* ============ HEADER ============ */
   .builderHeader{
+    width: 100%;
     max-width: 1220px;
+    box-sizing: border-box;
     margin: 0 auto 14px;
     display: flex;
     justify-content: space-between;
@@ -124,7 +127,10 @@
   
   /* ============ GRID ============ */
   .builderGrid{
+    width: 100%;
     max-width: 1220px;
+    min-width: 0;
+    box-sizing: border-box;
     margin: 0 auto;
     display: grid;
     grid-template-columns: 240px 1fr 340px;
@@ -133,6 +139,8 @@
   
   /* Panels */
   .catPanel, .itemsPanel, .cartPanel{
+    min-width: 0;
+    box-sizing: border-box;
     background: rgba(255,255,255,.72);
     border: 1px solid var(--border);
     border-radius: 18px;
@@ -156,6 +164,7 @@
   }
 
   .itemsToolbar{
+    min-width: 0;
     display:flex;
     justify-content: space-between;
     align-items:flex-start;
@@ -258,12 +267,14 @@
   
   /* ============ ITEMS GRID ============ */
   .itemsGrid{
+    min-width: 0;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
   
   .itemCard{
+    min-width: 0;
     border-radius: 18px;
     border: 1px solid rgba(0,0,0,.10);
     background: linear-gradient(180deg, #fff, rgba(255,255,255,.88));
@@ -505,17 +516,30 @@
   
   /* ============ RESPONSIVE ============ */
   @media (max-width: 1050px){
-    .builderGrid{ grid-template-columns: 1fr; }
-    .itemsGrid{ grid-template-columns: 1fr; }
+    .builderShell{
+      padding: 18px 12px 28px;
+    }
+    .builderHeader,
+    .builderGrid{
+      max-width: 100%;
+    }
+    .builderGrid{ grid-template-columns: minmax(0, 1fr); }
+    .itemsGrid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .catList{
       display:flex;
       overflow-x:auto;
+      max-width: 100%;
+      min-width: 0;
       padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
     }
     .catBtn{
+      flex: 0 0 190px;
       min-width: 190px;
     }
     .catPanel, .itemsPanel, .cartPanel{
+      width: 100%;
+      overflow: hidden;
       min-height: auto;
     }
     .itemsToolbar{
@@ -525,6 +549,17 @@
       width: 100%;
       min-width: 0;
     }
+  }
+
+  @media (max-width: 700px){
+    .builderHeader{
+      flex-direction: column;
+    }
+    .builderBackBtn{
+      width: 100%;
+    }
+    .itemsGrid{ grid-template-columns: 1fr; }
+    .itemActions{ grid-template-columns: 1fr; }
   }
   
   @media (min-width: 1051px){

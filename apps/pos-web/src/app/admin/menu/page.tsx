@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "@/lib/auth/authstore";
 
 type MenuCategory = {
@@ -22,6 +22,24 @@ type MenuItemData = {
   imageUrl?: string | null;
   imageAlt?: string | null;
   category?: MenuCategory | null;
+  modifierOptions?: ModifierOption[];
+};
+
+type ModifierOption = {
+  id: string;
+  name: string;
+  priceDeltaCents: number;
+  isActive: boolean;
+};
+
+type MenuApiCategory = MenuCategory & {
+  items?: MenuItemData[];
+};
+
+type MenuApiResponse = {
+  categories?: MenuApiCategory[];
+  items?: MenuItemData[];
+  menuItems?: MenuItemData[];
 };
 
 type MenuFormState = {
@@ -53,7 +71,7 @@ function normalizeCategoryKey(name: string) {
 }
 
 export default function AdminMenuPage() {
-  const token = useAuthStore((s) => s.token);
+  const token = useAuthStore((s) => s.managerAccessToken ?? s.token);
 
   const [items, setItems] = useState<MenuItemData[]>([]);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
@@ -85,10 +103,13 @@ export default function AdminMenuPage() {
     sortOrder: "",
     isActive: true,
   });
+  const [modifierName, setModifierName] = useState("");
+  const [modifierPrice, setModifierPrice] = useState("");
+  const [savingModifier, setSavingModifier] = useState(false);
 
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
-  async function loadMenu() {
+  const loadMenu = useCallback(async () => {
     if (!token) {
       setLoading(false);
       return;
@@ -111,13 +132,13 @@ export default function AdminMenuPage() {
         throw new Error("Failed to load menu");
       }
 
-      const data = await res.json();
+      const data = (await res.json()) as MenuApiResponse | MenuItemData[];
 
       let rawItems: MenuItemData[] = [];
       let rawCategories: MenuCategory[] = [];
 
-      if (Array.isArray(data.categories)) {
-        rawCategories = data.categories.map((cat: any) => ({
+      if (!Array.isArray(data) && Array.isArray(data.categories)) {
+        rawCategories = data.categories.map((cat) => ({
           id: String(cat.id),
           name: cat.name,
           slug: cat.slug,
@@ -125,8 +146,8 @@ export default function AdminMenuPage() {
           isActive: cat.isActive,
         }));
 
-        rawItems = data.categories.flatMap((cat: any) =>
-          (cat.items || []).map((item: any) => ({
+        rawItems = data.categories.flatMap((cat) =>
+          (cat.items || []).map((item) => ({
             ...item,
             category: {
               id: String(cat.id),
@@ -137,9 +158,9 @@ export default function AdminMenuPage() {
             },
           }))
         );
-      } else if (Array.isArray(data.items)) {
+      } else if (!Array.isArray(data) && Array.isArray(data.items)) {
         rawItems = data.items;
-      } else if (Array.isArray(data.menuItems)) {
+      } else if (!Array.isArray(data) && Array.isArray(data.menuItems)) {
         rawItems = data.menuItems;
       } else if (Array.isArray(data)) {
         rawItems = data;
@@ -176,11 +197,11 @@ export default function AdminMenuPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [scope, token]);
 
   useEffect(() => {
     loadMenu();
-  }, [token, scope]);
+  }, [loadMenu]);
 
   const allCategoryNames = useMemo(() => {
     const names = new Set<string>();
@@ -257,6 +278,8 @@ export default function AdminMenuPage() {
       isActive: item.isActive,
       taxable: item.taxable,
     });
+    setModifierName("");
+    setModifierPrice("");
   }
 
   function openCreateModal() {
@@ -287,6 +310,8 @@ export default function AdminMenuPage() {
       isActive: true,
       taxable: true,
     });
+    setModifierName("");
+    setModifierPrice("");
   }
 
   function openCategoryModal() {
@@ -433,6 +458,44 @@ export default function AdminMenuPage() {
     } catch (saveError) {
       console.error(saveError);
       alert("Could not create category.");
+    }
+  }
+
+  async function handleAddModifier() {
+    if (!token || !selectedItem) return;
+    const parsedPrice = Number(modifierPrice || "0");
+    if (!modifierName.trim() || Number.isNaN(parsedPrice) || parsedPrice < 0) {
+      alert("Enter a modifier name and a valid extra price.");
+      return;
+    }
+
+    setSavingModifier(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/menu/${selectedItem.id}/modifiers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: modifierName.trim(),
+          priceDeltaCents: Math.round(parsedPrice * 100),
+          isActive: true,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? "Failed to add modifier");
+      }
+      const { modifier } = await res.json();
+      setSelectedItem((item) =>
+        item ? { ...item, modifierOptions: [...(item.modifierOptions ?? []), modifier] } : item
+      );
+      setModifierName("");
+      setModifierPrice("");
+      await loadMenu();
+    } catch (modifierError) {
+      console.error(modifierError);
+      alert("Could not add modifier.");
+    } finally {
+      setSavingModifier(false);
     }
   }
 
@@ -820,6 +883,42 @@ export default function AdminMenuPage() {
                   placeholder="Short description of the image"
                 />
               </div>
+
+              {!isCreateMode && selectedItem && (
+                <section className="adminModifierEditor">
+                  <div className="adminModifierHeader">
+                    <div>
+                      <div className="adminSwitchLabel">Modifiers</div>
+                      <div className="adminSwitchHelp">Add choices such as extra cheese, sauce, or protein.</div>
+                    </div>
+                  </div>
+                  {(selectedItem.modifierOptions ?? []).length > 0 && (
+                    <div className="adminModifierList">
+                      {(selectedItem.modifierOptions ?? []).map((modifier) => (
+                        <span className="adminModifierPill" key={modifier.id}>
+                          {modifier.name} {modifier.priceDeltaCents > 0 ? `+$${centsToDollars(modifier.priceDeltaCents)}` : ""}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="adminModifierInputs">
+                    <input
+                      value={modifierName}
+                      onChange={(e) => setModifierName(e.target.value)}
+                      placeholder="Modifier name"
+                    />
+                    <input
+                      value={modifierPrice}
+                      onChange={(e) => setModifierPrice(e.target.value)}
+                      placeholder="Extra price"
+                      inputMode="decimal"
+                    />
+                    <button type="button" className="adminModalPrimaryBtn" onClick={handleAddModifier} disabled={savingModifier}>
+                      {savingModifier ? "Adding..." : "+ Add"}
+                    </button>
+                  </div>
+                </section>
+              )}
 
               <div className="adminSwitchRow">
                 <label className="adminSwitchCard">

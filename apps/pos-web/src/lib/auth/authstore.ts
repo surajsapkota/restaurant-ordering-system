@@ -27,6 +27,8 @@ export type LoginMethod = "PIN" | "PASSWORD";
 type AuthState = {
   token: string | null;
   user: AuthUser | null;
+  managerAccessToken: string | null;
+  managerAccessUser: AuthUser | null;
 
   // When true, it means we finished loading from localStorage
   hydrated: boolean;
@@ -36,6 +38,10 @@ type AuthState = {
 
   // Save auth info (token + user + method)
   setAuth: (token: string, user: AuthUser, method: LoginMethod) => void;
+
+  // Temporarily authorize manager actions without replacing the signed-in employee
+  setManagerAccess: (token: string, user: AuthUser) => void;
+  clearManagerAccess: () => void;
 
   // Clear auth info
   clearAuth: () => void;
@@ -52,6 +58,8 @@ const STORAGE_KEY = "pos_auth_v1";
 export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   user: null,
+  managerAccessToken: null,
+  managerAccessUser: null,
   hydrated: false,
   loginMethod: null,
 
@@ -66,9 +74,23 @@ export const useAuthStore = create<AuthState>((set) => ({
     );
   },
 
+  setManagerAccess: (token, user) => {
+    set({ managerAccessToken: token, managerAccessUser: user });
+  },
+
+  clearManagerAccess: () => {
+    set({ managerAccessToken: null, managerAccessUser: null });
+  },
+
   clearAuth: () => {
     // Clear Zustand state
-    set({ token: null, user: null, loginMethod: null });
+    set({
+      token: null,
+      user: null,
+      managerAccessToken: null,
+      managerAccessUser: null,
+      loginMethod: null,
+    });
 
     // Clear localStorage
     localStorage.removeItem(STORAGE_KEY);
@@ -94,6 +116,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({
         token: parsed.token,
         user: parsed.user,
+        managerAccessToken: null,
+        managerAccessUser: null,
         // If old storage doesn't have loginMethod, default to PIN
         loginMethod: parsed.loginMethod ?? "PIN",
         hydrated: true,
@@ -101,7 +125,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch {
       // If storage is corrupted, wipe it
       localStorage.removeItem(STORAGE_KEY);
-      set({ hydrated: true, loginMethod: null });
+      set({
+        managerAccessToken: null,
+        managerAccessUser: null,
+        hydrated: true,
+        loginMethod: null,
+      });
     }
   },
 
@@ -120,7 +149,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch {
       // Token invalid/expired -> logout
       localStorage.removeItem(STORAGE_KEY);
-      useAuthStore.setState({ token: null, user: null, loginMethod: null });
+      useAuthStore.setState({
+        token: null,
+        user: null,
+        managerAccessToken: null,
+        managerAccessUser: null,
+        loginMethod: null,
+      });
     }
   },
 }));

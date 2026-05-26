@@ -1,0 +1,20 @@
+.managerMenuReturn {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
+.managerMenuReturnBtn {
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  border-radius: 10px;
+  background: #fff7ed;
+  color: #c2410c;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.managerMenuReturnBtn:hover {
+  background: #ffedd5;
+}

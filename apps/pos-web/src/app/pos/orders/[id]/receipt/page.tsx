@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/lib/auth/authstore";
 import "./receipt.css";
@@ -11,6 +11,11 @@ type OrderItem = {
   qty: number;
   basePriceCents: number;
   notes?: string | null;
+  modifiers?: {
+    id: string;
+    nameSnapshot: string;
+    priceDeltaCents: number;
+  }[];
 };
 
 type Order = {
@@ -66,7 +71,7 @@ export default function ReceiptPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadOrder() {
+  const loadOrder = useCallback(async () => {
     if (!token) return;
 
     try {
@@ -93,11 +98,11 @@ export default function ReceiptPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [orderId, token]);
 
   useEffect(() => {
     loadOrder();
-  }, [token, orderId]);
+  }, [loadOrder]);
 
   const subtotalCents = useMemo(() => {
     if (!order) return 0;
@@ -157,7 +162,12 @@ export default function ReceiptPage() {
               const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/printer/cashier-receipt/${orderId}`,
                 {
-                  method: "GET",
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({ copy: "receipt" }),
                 }
               );
 
@@ -202,7 +212,11 @@ export default function ReceiptPage() {
 
           <div className="receiptItems">
             {(order.items ?? []).map((item) => {
-              const lineTotal = item.basePriceCents * item.qty;
+              const modifierTotal = (item.modifiers ?? []).reduce(
+                (sum, modifier) => sum + modifier.priceDeltaCents,
+                0
+              );
+              const lineTotal = (item.basePriceCents + modifierTotal) * item.qty;
 
               return (
                 <div key={item.id} className="receiptLine">
@@ -210,6 +224,14 @@ export default function ReceiptPage() {
                     <div className="receiptItemName">
                       {item.qty} × {item.nameSnapshot}
                     </div>
+                    {(item.modifiers ?? []).map((modifier) => (
+                      <div key={modifier.id} className="receiptItemModifier">
+                        + {modifier.nameSnapshot}
+                        {modifier.priceDeltaCents > 0
+                          ? ` ($${centsToDollars(modifier.priceDeltaCents * item.qty)})`
+                          : ""}
+                      </div>
+                    ))}
                     {item.notes ? <div className="receiptItemNote">{item.notes}</div> : null}
                   </div>
                   <div className="receiptLineRight">${centsToDollars(lineTotal)}</div>

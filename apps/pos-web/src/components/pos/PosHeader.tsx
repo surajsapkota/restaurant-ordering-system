@@ -1,15 +1,21 @@
 "use client";
 
 import { useAuthStore } from "@/lib/auth/authstore";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 type ModalStep = "CLOSED" | "MANAGER_PIN" | "MANAGER_PANEL" | "ADMIN_PIN" | "MY_REPORT" | "CLOCK_OUT_CONFIRM" | "CLOCK_OUT_PREVIEW";
 type Role = "ADMIN" | "MANAGER" | "EMPLOYEE";
+type ClockOutSession = {
+  loginAt: string;
+  logoutAt: string;
+  workedMinutes: number;
+};
 
 export default function PosHeader() {
   const router = useRouter();
-  const { user, clearAuth, token } = useAuthStore() as any;
+  const pathname = usePathname();
+  const { user, clearAuth, setManagerAccess, clearManagerAccess, token } = useAuthStore();
 
   const role = (user?.role ?? "EMPLOYEE") as Role;
   const isAdminLoggedIn = role === "ADMIN";
@@ -17,6 +23,7 @@ export default function PosHeader() {
 
   const [time, setTime] = useState("");
   const [step, setStep] = useState<ModalStep>("CLOSED");
+  const [managerId, setManagerId] = useState("");
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState<string | null>(null);
   const [pinLoading, setPinLoading] = useState(false);
@@ -25,7 +32,7 @@ export default function PosHeader() {
   const [clockOutCode, setClockOutCode] = useState("");
   const [clockOutError, setClockOutError] = useState<string | null>(null);
   const [clockOutLoading, setClockOutLoading] = useState(false);
-  const [clockOutSession, setClockOutSession] = useState<any>(null);
+  const [clockOutSession, setClockOutSession] = useState<ClockOutSession | null>(null);
 
   const apiBase = useMemo(() => process.env.NEXT_PUBLIC_API_URL, []);
 
@@ -37,13 +44,23 @@ export default function PosHeader() {
     return () => clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    if (role === "EMPLOYEE" && !pathname.startsWith("/pos/manager/")) {
+      clearManagerAccess();
+    }
+  }, [pathname, role, clearManagerAccess]);
+
   function resetPinState() {
+    setManagerId("");
     setPin("");
     setPinError(null);
     setPinLoading(false);
   }
 
   function closeModal() {
+    if (!isAdminLoggedIn && !isManagerLoggedIn) {
+      clearManagerAccess();
+    }
     setStep("CLOSED");
     resetPinState();
   }
@@ -54,7 +71,61 @@ export default function PosHeader() {
       setStep("MANAGER_PANEL");
       return;
     }
+    clearManagerAccess();
     setStep("MANAGER_PIN");
+  }
+
+  function openManagerPage(path: string) {
+    setStep("CLOSED");
+    resetPinState();
+    router.push(path);
+  }
+
+  async function verifyManagerAccess() {
+    setPinError(null);
+    if (!managerId.trim() || !pin.trim()) {
+      setPinError("Please enter manager ID and code.");
+      return;
+    }
+    if (!apiBase || !token) {
+      setPinError("POS session is unavailable. Please login again.");
+      return;
+    }
+
+    setPinLoading(true);
+    try {
+      const res = await fetch(`${apiBase}/auth/manager-access`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ managerId: managerId.trim(), code: pin.trim() }),
+      });
+
+      if (!res.ok) {
+        setPinError("Invalid manager ID or code.");
+        return;
+      }
+
+      const data = await res.json() as {
+        token: string;
+        user: {
+          id: string;
+          name: string | null;
+          role: "ADMIN" | "MANAGER";
+          employeeCode?: string | null;
+        };
+      };
+
+      setManagerAccess(data.token, data.user);
+      resetPinState();
+      setStep("MANAGER_PANEL");
+    } catch {
+      setPinError("Network error. Try again.");
+    } finally {
+      setPinLoading(false);
+    }
   }
 
   async function verifyPin(requiredRole: "MANAGER" | "ADMIN") {
@@ -160,11 +231,9 @@ export default function PosHeader() {
           <strong>{time}</strong>
         </div>
 
-        {(isAdminLoggedIn || isManagerLoggedIn) && (
-          <button className="managerBtn" onClick={openManager} type="button">
-            Manager
-          </button>
-        )}
+        <button className="managerBtn" onClick={openManager} type="button">
+          Manager
+        </button>
 
         <button className="reportBtn" onClick={() => setStep("MY_REPORT")} type="button">
           My Report
@@ -216,20 +285,34 @@ export default function PosHeader() {
             {/* MANAGER PIN */}
             {step === "MANAGER_PIN" && (
               <>
-                <p className="posModalText">Enter the manager code to open controls.</p>
-                <input
-                  className="posModalInput"
-                  inputMode="numeric"
-                  placeholder="Enter manager code"
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") verifyPin("MANAGER"); }}
-                  autoFocus
-                />
+                <p className="posModalText">Manager authorization is required to open controls.</p>
+                <label className="posModalField">
+                  <span>Manager ID</span>
+                  <input
+                    className="posModalInput"
+                    inputMode="numeric"
+                    placeholder="Enter manager ID"
+                    value={managerId}
+                    onChange={(e) => setManagerId(e.target.value)}
+                    autoFocus
+                  />
+                </label>
+                <label className="posModalField">
+                  <span>Manager Code</span>
+                  <input
+                    className="posModalInput"
+                    inputMode="numeric"
+                    type="password"
+                    placeholder="Enter manager code"
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") verifyManagerAccess(); }}
+                  />
+                </label>
                 {pinError && <div className="posModalError">{pinError}</div>}
                 <div className="posModalActions">
                   <button className="posModalBtnGhost" onClick={closeModal} type="button">Cancel</button>
-                  <button className="posModalBtnPrimary" onClick={() => verifyPin("MANAGER")} type="button" disabled={pinLoading}>
+                  <button className="posModalBtnPrimary" onClick={verifyManagerAccess} type="button" disabled={pinLoading}>
                     {pinLoading ? "Checking..." : "Continue"}
                   </button>
                 </div>
@@ -263,21 +346,29 @@ export default function PosHeader() {
             {step === "MANAGER_PANEL" && (
               <>
                 <div className="posModalGrid">
-                  <button className="posModalTile" onClick={() => { closeModal(); router.push("/pos/manager/shift"); }} type="button">
+                  <button className="posModalTile" onClick={() => openManagerPage("/pos/manager/shift")} type="button">
                     <div className="tileTitle">Shift</div>
                     <div className="tileSub">Open / close shift, cash in/out</div>
                   </button>
-                  <button className="posModalTile" onClick={() => { closeModal(); router.push("/pos/manager/employees"); }} type="button">
+                  <button className="posModalTile" onClick={() => openManagerPage("/pos/manager/employees")} type="button">
                     <div className="tileTitle">Employees</div>
                     <div className="tileSub">Add / remove employees, login codes</div>
                   </button>
-                  <button className="posModalTile" onClick={() => { closeModal(); router.push("/pos/manager/menu"); }} type="button">
+                  <button className="posModalTile" onClick={() => openManagerPage("/pos/manager/reports#transactions")} type="button">
+                    <div className="tileTitle">Transaction Viewer</div>
+                    <div className="tileSub">Orders, payments, and item details</div>
+                  </button>
+                  <button className="posModalTile" onClick={() => openManagerPage("/pos/manager/reports#staff")} type="button">
+                    <div className="tileTitle">Clock Out Employee</div>
+                    <div className="tileSub">Manage staff currently clocked in</div>
+                  </button>
+                  <button className="posModalTile" onClick={() => openManagerPage("/pos/manager/reports#current-report")} type="button">
+                    <div className="tileTitle">Current Report</div>
+                    <div className="tileSub">Live shift totals and payment summary</div>
+                  </button>
+                  <button className="posModalTile" onClick={() => openManagerPage("/pos/manager/menu")} type="button">
                     <div className="tileTitle">Menu</div>
                     <div className="tileSub">Add / update items, price, picture, description</div>
-                  </button>
-                  <button className="posModalTile" onClick={() => { closeModal(); router.push("/pos/manager/reports"); }} type="button">
-                    <div className="tileTitle">Sales History</div>
-                    <div className="tileSub">Date range totals, taxes, net, gross</div>
                   </button>
                   {!adminUnlocked && !isAdminLoggedIn ? (
                     <button className="posModalTile" onClick={() => { setPin(""); setPinError(null); setStep("ADMIN_PIN"); }} type="button">

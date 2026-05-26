@@ -1,0 +1,286 @@
+.attendancePage {
+  max-width: 1280px;
+  color: #241206;
+}
+
+.attendanceFilters,
+.attendanceCard,
+.attendanceStatus,
+.attendanceError {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(255, 183, 3, 0.2);
+  border-radius: 16px;
+}
+
+.attendanceFilters {
+  padding: 16px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: end;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.attendanceFilters label {
+  display: grid;
+  gap: 5px;
+  min-width: 140px;
+}
+
+.attendanceFilters label span {
+  color: rgba(36, 18, 6, 0.57);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.attendanceApplyBtn {
+  height: 39px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 0;
+  background: linear-gradient(135deg, #ffb703, #fb5607);
+  color: #241206;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.attendanceError,
+.attendanceStatus {
+  padding: 15px;
+  margin-bottom: 18px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.attendanceError {
+  border-color: rgba(220, 38, 38, 0.22);
+  color: #991b1b;
+}
+
+.attendanceMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.attendanceCard {
+  padding: 19px;
+}
+
+.attendanceCardHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 17px;
+}
+
+.attendanceCardHeading h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.attendanceCardHeading span {
+  color: rgba(36, 18, 6, 0.56);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.attendanceEmpty {
+  background: rgba(36, 18, 6, 0.04);
+  border-radius: 12px;
+  padding: 16px;
+  color: rgba(36, 18, 6, 0.58);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.attendanceTableWrap {
+  overflow-x: auto;
+}
+
+.attendanceTable {
+  width: 100%;
+  min-width: 910px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.attendanceTable th {
+  text-align: left;
+  padding: 10px 9px;
+  border-bottom: 1px solid rgba(36, 18, 6, 0.12);
+  color: rgba(36, 18, 6, 0.53);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+}
+
+.attendanceTable td {
+  padding: 12px 9px;
+  border-bottom: 1px solid rgba(36, 18, 6, 0.08);
+  vertical-align: middle;
+}
+
+.attendanceTable td:first-child strong,
+.attendanceTable td:first-child small {
+  display: block;
+}
+
+.attendanceTable td:first-child small {
+  color: rgba(36, 18, 6, 0.55);
+  font-size: 11px;
+  margin-top: 3px;
+}
+
+.attendanceBadge {
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.attendanceBadge.active {
+  color: #166534;
+  background: rgba(34, 197, 94, 0.14);
+}
+
+.attendanceBadge.complete {
+  color: #92400e;
+  background: rgba(245, 158, 11, 0.14);
+}
+
+.attendanceActions {
+  display: flex;
+  gap: 7px;
+}
+
+.attendanceActions button {
+  border: 1px solid rgba(36, 18, 6, 0.15);
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: #fff;
+  color: #241206;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.attendanceActions .clockOutAction {
+  color: #b91c1c;
+  border-color: rgba(220, 38, 38, 0.18);
+  background: rgba(220, 38, 38, 0.06);
+}
+
+.attendanceModalOverlay {
+  position: fixed;
+  inset: 0;
+  padding: 22px;
+  display: grid;
+  place-items: center;
+  z-index: 100;
+  background: rgba(24, 12, 5, 0.34);
+}
+
+.attendanceModal {
+  width: min(490px, 100%);
+  background: #fffaf3;
+  border-radius: 20px;
+  padding: 22px;
+  display: grid;
+  gap: 13px;
+  box-shadow: 0 28px 70px rgba(24, 12, 5, 0.22);
+}
+
+.attendanceModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 5px;
+}
+
+.attendanceModalHeader h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+
+.attendanceModalHeader p {
+  font-size: 12px;
+  color: rgba(36, 18, 6, 0.56);
+}
+
+.attendanceModalHeader button {
+  border: 0;
+  background: transparent;
+  color: rgba(36, 18, 6, 0.55);
+  font-size: 17px;
+  cursor: pointer;
+}
+
+.attendanceModal label {
+  display: grid;
+  gap: 6px;
+}
+
+.attendanceModal label span {
+  color: rgba(36, 18, 6, 0.58);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.attendanceModal input,
+.attendanceModal textarea {
+  width: 100%;
+  border: 1px solid rgba(36, 18, 6, 0.16);
+  border-radius: 11px;
+  padding: 11px;
+  background: #fff;
+  color: #241206;
+  font: inherit;
+}
+
+.attendanceModal textarea {
+  min-height: 74px;
+  resize: vertical;
+}
+
+.attendanceModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 6px;
+}
+
+.attendanceModalActions button {
+  border: 0;
+  border-radius: 11px;
+  padding: 11px 16px;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.attendanceModalActions .cancel {
+  background: rgba(36, 18, 6, 0.08);
+  color: #241206;
+}
+
+.attendanceModalActions .save {
+  background: linear-gradient(135deg, #ffb703, #fb5607);
+  color: #241206;
+}
+
+@media (max-width: 820px) {
+  .attendanceMetrics {
+    grid-template-columns: 1fr;
+  }
+
+  .attendanceCardHeading {
+    display: grid;
+  }
+}

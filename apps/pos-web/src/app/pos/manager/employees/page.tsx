@@ -20,30 +20,23 @@ type Emp = {
 
 export default function EmployeesPage() {
   const router = useRouter();
-  type AuthUser = {
-    id: string;
-    name: string;
-    role: "ADMIN" | "MANAGER" | "EMPLOYEE" | "CUSTOMER";
-  };
-  
-  type AuthStoreShape = {
-    token: string | null;
-    user: AuthUser | null;
-  };
-  
-  const { token, user } = useAuthStore() as unknown as AuthStoreShape;
-  
-
-  const myRole = (user?.role ?? "EMPLOYEE") as Role;
+  const token = useAuthStore((s) => s.token);
+  const user = useAuthStore((s) => s.user);
+  const managerAccessToken = useAuthStore((s) => s.managerAccessToken);
+  const managerAccessUser = useAuthStore((s) => s.managerAccessUser);
+  const clearManagerAccess = useAuthStore((s) => s.clearManagerAccess);
+  const isLoggedInManager = user?.role === "MANAGER" || user?.role === "ADMIN";
+  const authorizationToken = isLoggedInManager ? token : managerAccessToken;
+  const myRole = ((isLoggedInManager ? user?.role : managerAccessUser?.role) ?? "EMPLOYEE") as Role;
   const isAdmin = myRole === "ADMIN";
   const isManager = myRole === "MANAGER";
 
   const apiBase = useMemo(() => process.env.NEXT_PUBLIC_API_URL, []);
   const authHeader = useMemo(
     () => ({
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${authorizationToken}`,
     }),
-    [token]
+    [authorizationToken]
   );
 
   const [items, setItems] = useState<Emp[]>([]);
@@ -69,7 +62,7 @@ export default function EmployeesPage() {
 
   async function loadEmployees() {
     if (!apiBase) return setErr("API URL missing (NEXT_PUBLIC_API_URL).");
-    if (!token) return setErr("Missing token. Please login again.");
+    if (!authorizationToken) return setErr("Manager authorization is required.");
 
     setLoading(true);
     setError(null);
@@ -82,8 +75,8 @@ export default function EmployeesPage() {
       if (!res.ok) throw new Error(data.error || data.message || "Failed to load employees");
 
       setItems(data.items ?? []);
-    } catch (e: any) {
-      setErr(e.message || "Error");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Error");
     } finally {
       setLoading(false);
     }
@@ -92,7 +85,7 @@ export default function EmployeesPage() {
   useEffect(() => {
     loadEmployees();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiBase, token]);
+  }, [apiBase, authorizationToken]);
 
   async function createEmployee() {
     setError(null);
@@ -131,8 +124,8 @@ export default function EmployeesPage() {
       setRole("EMPLOYEE");
 
       await loadEmployees();
-    } catch (e: any) {
-      setErr(e.message || "Error");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Error");
     } finally {
       setSaving(false);
     }
@@ -154,8 +147,8 @@ export default function EmployeesPage() {
       if (!res.ok) throw new Error(data.error || data.message || "Failed to update employee");
 
       await loadEmployees();
-    } catch (e: any) {
-      setErr(e.message || "Error");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Error");
     }
   }
 
@@ -181,8 +174,8 @@ export default function EmployeesPage() {
       if (!res.ok) throw new Error(data.error || data.message || "Failed to reset PIN");
 
       await loadEmployees();
-    } catch (e: any) {
-      setErr(e.message || "Error");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Error");
     }
   }
 
@@ -203,9 +196,27 @@ export default function EmployeesPage() {
       if (!res.ok) throw new Error(data.error || data.message || "Failed to delete employee");
 
       await loadEmployees();
-    } catch (e: any) {
-      setErr(e.message || "Error");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Error");
     }
+  }
+
+  if (!authorizationToken) {
+    return (
+      <main className="posWrap">
+        <div className="summaryError">Manager authorization is required.</div>
+        <button
+          className="posModalBtnGhost"
+          onClick={() => {
+            clearManagerAccess();
+            router.push("/pos");
+          }}
+          type="button"
+        >
+          Back to POS
+        </button>
+      </main>
+    );
   }
 
   return (
@@ -220,7 +231,14 @@ export default function EmployeesPage() {
         </div>
 
         <div className="mgrTopActions">
-          <button className="posModalBtnGhost" onClick={() => router.push("/pos")} type="button">
+          <button
+            className="posModalBtnGhost"
+            onClick={() => {
+              clearManagerAccess();
+              router.push("/pos");
+            }}
+            type="button"
+          >
             ← Back to POS
           </button>
           <button className="posModalBtnGhost" onClick={loadEmployees} type="button">

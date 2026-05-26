@@ -9,6 +9,17 @@ export type DraftMeta = {
   guests?: number;
   orderId?: string | null; // existing order
   terminalCode?: string;
+  draftId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  orderNote?: string;
+  deliveryAddr?: string;
+};
+
+export type DraftModifier = {
+  id: string;
+  name: string;
+  priceDeltaCents: number;
 };
 
 export type DraftLine = {
@@ -20,6 +31,7 @@ export type DraftLine = {
   qty: number;
   sideChoice: string;
   spiceLevel: string;
+  modifiers: DraftModifier[];
   note?: string;
 };
 

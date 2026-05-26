@@ -1386,6 +1386,46 @@
     min-height: 96px;
     resize: vertical;
   }
+
+  .adminModifierEditor {
+    padding: 14px;
+    border: 1px solid rgba(245, 158, 11, 0.18);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.62);
+  }
+
+  .adminModifierList {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .adminModifierPill {
+    padding: 6px 9px;
+    border-radius: 999px;
+    background: rgba(245, 158, 11, 0.12);
+    color: #7c2d12;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .adminModifierInputs {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) 110px auto;
+    gap: 8px;
+  }
+
+  .adminModifierInputs input {
+    border: 1px solid rgba(245, 158, 11, 0.22);
+    border-radius: 12px;
+    background: #fff;
+    color: #241206;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 11px;
+  }
   
   .adminSwitchRow {
     display: grid;
@@ -1461,6 +1501,10 @@
   @media (max-width: 700px) {
     .adminMetrics,
     .adminSwitchRow {
+      grid-template-columns: 1fr;
+    }
+
+    .adminModifierInputs {
       grid-template-columns: 1fr;
     }
   

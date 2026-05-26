@@ -15,6 +15,14 @@ type MenuItem = {
   taxable: boolean;
   imageUrl?: string | null;
   imageAlt?: string | null;
+  modifierOptions?: ModifierOption[];
+};
+
+type ModifierOption = {
+  id: string;
+  name: string;
+  priceDeltaCents: number;
+  isActive: boolean;
 };
 
 type VisibleMenuItem = MenuItem & {
@@ -37,6 +45,7 @@ type ExistingOrderItem = {
   qty: number;
   basePriceCents: number;
   notes?: string | null;
+  modifiers?: Array<{ id: string; nameSnapshot: string; priceDeltaCents: number }>;
 };
 
 type ExistingOrder = {
@@ -71,6 +80,11 @@ export default function NewOrderBuilderPage() {
   const type = (params.get("type") ?? "dine-in") as "dine-in" | "takeout" | "delivery";
   const table = params.get("table") ?? "";
   const guests = Number(params.get("guests") ?? "1");
+  const draftId = params.get("draftId") ?? "";
+  const customerName = params.get("customerName") ?? "";
+  const customerPhone = params.get("customerPhone") ?? "";
+  const orderNote = params.get("orderNote") ?? "";
+  const deliveryAddr = params.get("deliveryAddr") ?? "";
 
   // ✅ role check (no "any")
   const me = useAuthStore((s) => s.user) as MeUser;
@@ -103,21 +117,27 @@ export default function NewOrderBuilderPage() {
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [sideChoice, setSideChoice] = useState<(typeof SIDE_OPTIONS)[number] | null>(null);
   const [spiceLevel, setSpiceLevel] = useState<(typeof SPICE_OPTIONS)[number] | null>(null);
+  const [selectedModifierIds, setSelectedModifierIds] = useState<string[]>([]);
 
   const [noteLineId, setNoteLineId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
 
   // ✅ Key idea: each table/order gets its own draft, so carts never leak.
   useEffect(() => {
-    const key = type === "dine-in" ? `dine-in:${table || "unknown"}` : `${type}:single`;
+    const key = type === "dine-in" ? `dine-in:${table || "unknown"}` : `${type}:${draftId || "new"}`;
 
     openDraft(key, {
       type,
       table: type === "dine-in" ? table : undefined,
       guests: type === "dine-in" ? guests : undefined,
       orderId: orderId ?? null,
+      draftId: type !== "dine-in" ? draftId : undefined,
+      customerName: type !== "dine-in" ? customerName : undefined,
+      customerPhone: type !== "dine-in" ? customerPhone : undefined,
+      orderNote: type !== "dine-in" ? orderNote : undefined,
+      deliveryAddr: type === "delivery" ? deliveryAddr : undefined,
     });
-  }, [type, table, guests, orderId, openDraft]);
+  }, [type, table, guests, orderId, draftId, customerName, customerPhone, orderNote, deliveryAddr, openDraft]);
 
   // Load menu
   useEffect(() => {
@@ -214,11 +234,21 @@ export default function NewOrderBuilderPage() {
     setSelectedItem(item);
     setSideChoice(null);
     setSpiceLevel(null);
+    setSelectedModifierIds([]);
   }
 
-  function addWithMods(item: MenuItem, side: string, spice: string) {
+  function addWithMods(item: MenuItem, side: string, spice: string, selectedIds: string[] = []) {
     const lineId = makeLineId();
-    const extraCents = side === "Garlic Naan" ? 100 : 0;
+    const modifiers = (item.modifierOptions ?? [])
+      .filter((modifier) => selectedIds.includes(modifier.id))
+      .map((modifier) => ({
+        id: modifier.id,
+        name: modifier.name,
+        priceDeltaCents: modifier.priceDeltaCents,
+      }));
+    const extraCents =
+      (side === "Garlic Naan" ? 100 : 0) +
+      modifiers.reduce((sum, modifier) => sum + modifier.priceDeltaCents, 0);
 
     addLine({
       lineId,
@@ -229,12 +259,13 @@ export default function NewOrderBuilderPage() {
       qty: 1,
       sideChoice: side,
       spiceLevel: spice,
+      modifiers,
       note: "",
     });
   }
 
   function quickAdd(item: MenuItem) {
-    addWithMods(item, DEFAULT_SIDE, DEFAULT_SPICE);
+    addWithMods(item, DEFAULT_SIDE, DEFAULT_SPICE, []);
   }
 
   function openNote(lineId: string, currentNote?: string) {
@@ -291,7 +322,14 @@ export default function NewOrderBuilderPage() {
   // Existing subtotal (display-only)
   const existingSubtotalCents = useMemo(() => {
     if (!existingOrder?.items) return 0;
-    return existingOrder.items.reduce((sum, it) => sum + it.basePriceCents * it.qty, 0);
+    return existingOrder.items.reduce(
+      (sum, it) =>
+        sum +
+        (it.basePriceCents +
+          (it.modifiers ?? []).reduce((modifierSum, modifier) => modifierSum + modifier.priceDeltaCents, 0)) *
+          it.qty,
+      0
+    );
   }, [existingOrder]);
 
   return (
@@ -317,7 +355,7 @@ export default function NewOrderBuilderPage() {
           </p>
         </div>
 
-        <button className="builderBackBtn" onClick={() => router.push("/pos/new-order/dine-in")}>
+        <button className="builderBackBtn" onClick={() => router.push("/pos")}>
           Back
         </button>
       </header>
@@ -425,7 +463,12 @@ export default function NewOrderBuilderPage() {
                         <div className="cartItemName">
                           {it.qty}× {it.nameSnapshot}
                         </div>
-                        <div className="cartItemSub">${centsToDollars(it.basePriceCents)} each</div>
+                        <div className="cartItemSub">
+                          ${centsToDollars(it.basePriceCents + (it.modifiers ?? []).reduce((sum, modifier) => sum + modifier.priceDeltaCents, 0))} each
+                        </div>
+                        {(it.modifiers ?? []).map((modifier) => (
+                          <div key={modifier.id} className="cartNote">+ {modifier.nameSnapshot}</div>
+                        ))}
                         {it.notes && <div className="cartNote">Note: {it.notes}</div>}
                       </div>
 
@@ -479,6 +522,7 @@ export default function NewOrderBuilderPage() {
                           {line.extraCents > 0 ? ` (+$${centsToDollars(line.extraCents)})` : ""}
                           {" • "}
                           {line.spiceLevel}
+                          {(line.modifiers ?? []).map((modifier) => ` • ${modifier.name}`).join("")}
                           {" • $"}
                           {centsToDollars(unitCents)} each
                         </div>
@@ -539,6 +583,13 @@ export default function NewOrderBuilderPage() {
                       qp.set("guests", String(guests));
                     }
                     if (orderId) qp.set("orderId", orderId);
+                    if (draftId) qp.set("draftId", draftId);
+                    if (type !== "dine-in") {
+                      qp.set("customerName", customerName);
+                      qp.set("customerPhone", customerPhone);
+                      if (orderNote) qp.set("orderNote", orderNote);
+                      if (deliveryAddr) qp.set("deliveryAddr", deliveryAddr);
+                    }
 
                     router.push(`/pos/orders/review?${qp.toString()}`);
                   }}
@@ -594,12 +645,37 @@ export default function NewOrderBuilderPage() {
               </div>
             </div>
 
+            {!!selectedItem.modifierOptions?.length && (
+              <div className="popupSection">
+                <div className="popupLabel">Add-ons</div>
+                <div className="popupRow">
+                  {selectedItem.modifierOptions.map((modifier) => (
+                    <button
+                      key={modifier.id}
+                      type="button"
+                      className={`popupOption ${selectedModifierIds.includes(modifier.id) ? "active" : ""}`}
+                      onClick={() =>
+                        setSelectedModifierIds((current) =>
+                          current.includes(modifier.id)
+                            ? current.filter((id) => id !== modifier.id)
+                            : [...current, modifier.id]
+                        )
+                      }
+                    >
+                      {modifier.name}
+                      {modifier.priceDeltaCents > 0 ? ` (+$${centsToDollars(modifier.priceDeltaCents)})` : ""}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <button
               className="popupAddBtn"
               type="button"
               onClick={() => {
                 if (!selectedItem) return;
-                addWithMods(selectedItem, sideChoice ?? DEFAULT_SIDE, spiceLevel ?? DEFAULT_SPICE);
+                addWithMods(selectedItem, sideChoice ?? DEFAULT_SIDE, spiceLevel ?? DEFAULT_SPICE, selectedModifierIds);
                 setSelectedItem(null);
               }}
             >

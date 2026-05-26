@@ -229,7 +229,7 @@ export default function OrdersPage() {
       <div className="ordersWrap">
         <header className="ordersHeader">
           <div className="ordersHeaderLeft">
-            <button className="iconBtn" onClick={() => router.push("/pos/new-order")} title="Back">
+            <button className="iconBtn" onClick={() => router.push("/pos")} title="Back to Tables">
               ←
             </button>
 
@@ -243,7 +243,7 @@ export default function OrdersPage() {
           </div>
 
           <div className="ordersHeaderRight">
-            <button className="gradBtn" onClick={() => router.push("/pos/new-order")}>
+            <button className="gradBtn" onClick={() => router.push("/pos")}>
               + New Order
             </button>
             <button className="softBtn" onClick={load}>

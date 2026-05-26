@@ -32,6 +32,11 @@ export default function ReviewPage() {
   const table = params.get("table") ?? meta?.table ?? "";
   const guests = Number(params.get("guests") ?? meta?.guests ?? "1");
   const orderId = params.get("orderId") ?? meta?.orderId ?? null;
+  const draftId = params.get("draftId") ?? meta?.draftId ?? "";
+  const customerName = params.get("customerName") ?? meta?.customerName ?? "";
+  const customerPhone = params.get("customerPhone") ?? meta?.customerPhone ?? "";
+  const orderNote = params.get("orderNote") ?? meta?.orderNote ?? "";
+  const deliveryAddr = params.get("deliveryAddr") ?? meta?.deliveryAddr ?? "";
 
   const subtotalCents = useMemo(() => {
     return cart.reduce((sum, l) => sum + (l.basePriceCents + l.extraCents) * l.qty, 0);
@@ -50,30 +55,15 @@ export default function ReviewPage() {
     }
 
     if (orderId) qp.set("orderId", orderId);
+    if (draftId) qp.set("draftId", draftId);
+    if (type !== "dine-in") {
+      qp.set("customerName", customerName);
+      qp.set("customerPhone", customerPhone);
+      if (orderNote) qp.set("orderNote", orderNote);
+      if (deliveryAddr) qp.set("deliveryAddr", deliveryAddr);
+    }
 
     router.push(`/pos/orders/new?${qp.toString()}`);
-  }
-
-  async function patchStatusToKitchen(id: string) {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/${id}/status`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ status: "IN_KITCHEN" }),
-    });
-
-    if (!res.ok) {
-      let msg = "Failed to send order to kitchen";
-      try {
-        const body = await res.json();
-        msg = body?.error ?? msg;
-      } catch {
-        // ignore
-      }
-      throw new Error(msg);
-    }
   }
 
   async function confirmAndSend() {
@@ -108,6 +98,7 @@ export default function ReviewPage() {
               sideChoice: l.sideChoice,
               spiceLevel: l.spiceLevel,
               extraCents: l.extraCents,
+              modifiers: (l.modifiers ?? []).map((modifier) => ({ id: modifier.id })),
             })),
             sendToKitchen: true,
           }),
@@ -137,11 +128,18 @@ export default function ReviewPage() {
       const payload = {
         type: type === "dine-in" ? "DINE_IN" : type.toUpperCase(), // TAKEOUT / DELIVERY
         tableNumber: type === "dine-in" ? table : null,
+        customerName: type !== "dine-in" ? customerName : null,
+        customerPhone: type !== "dine-in" ? customerPhone : null,
+        customerNote: type !== "dine-in" ? orderNote : null,
+        deliveryAddr: type === "delivery" ? deliveryAddr : null,
         terminalCode: "TABLET-1",
         sendToKitchen: true,
         items: cart.map((l) => ({
           menuItemId: l.menuItemId,
           qty: l.qty,
+          modifiers: (l.modifiers ?? []).map((modifier) => ({ id: modifier.id })),
+          sideChoice: l.sideChoice,
+          spiceLevel: l.spiceLevel,
           notes:
             (l.note?.trim() ? `Note: ${l.note.trim()}\n` : "") +
             (l.sideChoice ? `Side: ${l.sideChoice}\n` : "") +
@@ -194,6 +192,7 @@ export default function ReviewPage() {
         <h1 className="reviewTitle">Review Order</h1>
         <div className="reviewMeta">
           Type: {type} {type === "dine-in" ? `| Table: ${table} | Guests: ${guests}` : ""}
+          {type !== "dine-in" ? ` | ${customerName} | ${customerPhone}` : ""}
           {orderId ? " | Existing order" : ""}
         </div>
 
@@ -206,6 +205,7 @@ export default function ReviewPage() {
                 </div>
                 <div className="reviewSub">
                   {l.sideChoice} • {l.spiceLevel}
+                  {(l.modifiers ?? []).map((modifier) => ` • ${modifier.name}`).join("")}
                   {l.note?.trim() ? ` • Note: ${l.note.trim()}` : ""}
                 </div>
               </div>

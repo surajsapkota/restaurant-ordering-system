@@ -186,6 +186,19 @@
     font-weight: 900;
     font-size: 13px;
   }
+
+  .shiftSuccess {
+    margin-top: 14px;
+    width: 100%;
+    max-width: 520px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(22, 163, 74, 0.10);
+    border: 1px solid rgba(22, 163, 74, 0.24);
+    color: #166534;
+    font-weight: 900;
+    font-size: 13px;
+  }
   
   .shiftWaitMsg {
     font-size: 14px;
