@@ -178,7 +178,7 @@ export default function ReceiptPage() {
                 return;
               }
 
-              alert("Receipt printed");
+              alert("Receipt sent to front counter printer");
             } catch (err) {
               console.error(err);
               alert("Could not connect to printer");
