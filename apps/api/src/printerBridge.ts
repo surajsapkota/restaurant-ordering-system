@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import prisma from "./db/prisma";
 import { printKitchenTicket } from "./utils/kitchenPrinter";
+import { printCashierReceiptText } from "./utils/cashierPrinter";
 
 const PRINTED_FILE = path.join(process.cwd(), "printed-items.json");
 
@@ -78,15 +79,69 @@ async function checkAndPrint() {
   }
 }
 
+async function checkAndPrintCashierJobs() {
+  const jobs = await prisma.printerJob.findMany({
+    where: {
+      printer: "CASHIER",
+      status: "PENDING",
+      attempts: { lt: 3 },
+    },
+    orderBy: { createdAt: "asc" },
+    take: 10,
+  });
+
+  for (const job of jobs) {
+    const claimed = await prisma.printerJob.updateMany({
+      where: { id: job.id, status: "PENDING" },
+      data: {
+        status: "PRINTING",
+        attempts: { increment: 1 },
+        error: null,
+      },
+    });
+
+    if (claimed.count === 0) continue;
+
+    try {
+      await printCashierReceiptText(job.content);
+      await prisma.printerJob.update({
+        where: { id: job.id },
+        data: {
+          status: "PRINTED",
+          printedAt: new Date(),
+        },
+      });
+      console.log(`Printed cashier job ${job.id}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Cashier print failed";
+      const finalAttempt = job.attempts + 1 >= 3;
+      await prisma.printerJob.update({
+        where: { id: job.id },
+        data: {
+          status: finalAttempt ? "FAILED" : "PENDING",
+          error: message.slice(0, 500),
+        },
+      });
+      console.error(`Cashier job ${job.id} failed:`, error);
+    }
+  }
+}
+
 async function startBridge() {
   console.log("🟢 Printer bridge started");
-  console.log("Watching Neon database for kitchen orders...");
+  console.log("Watching database for kitchen orders and cashier print jobs...");
 
   setInterval(async () => {
     try {
       await checkAndPrint();
     } catch (error) {
-      console.error("❌ Printer bridge error:", error);
+      console.error("Kitchen printer bridge error:", error);
+    }
+
+    try {
+      await checkAndPrintCashierJobs();
+    } catch (error) {
+      console.error("Cashier printer bridge error:", error);
     }
   }, 5000);
 }

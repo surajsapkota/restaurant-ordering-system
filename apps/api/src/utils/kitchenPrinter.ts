@@ -128,7 +128,7 @@ export async function printKitchenTicket(order: KitchenOrder) {
     chunks.push(txt(`NAME    ${order.customerName}\n`));
   }
 
-  chunks.push(ESC.normal);
+  chunks.push(ESC.medium);
   if (order.customerPhone) {
     chunks.push(txt(`PHONE   ${order.customerPhone}\n`));
   }
@@ -144,29 +144,29 @@ export async function printKitchenTicket(order: KitchenOrder) {
 
   // ── ITEMS ──────────────────────────────────────────────────────────────────
   // Each item is the most important thing on the ticket.
-  // Bold for the name, normal (unbolded) for notes.
+  // Bold for the name, readable full-height text for instructions.
   for (let i = 0; i < order.items.length; i++) {
     const item = order.items[i];
 
-    // Item number pill: "1." "2." etc — helps staff count items quickly
+    // Keep ticket contents large enough to scan quickly during service.
     chunks.push(ESC.alignLeft);
-    chunks.push(ESC.normal);
+    chunks.push(ESC.medium);
     chunks.push(txt(`ITEM ${i + 1} of ${order.items.length}\n`));
 
-    // The dish is bold; additions and instructions stay plain and smaller.
-    chunks.push(ESC.normal);
+    // The dish is bold; additions and instructions remain full readable height.
+    chunks.push(ESC.medium);
     chunks.push(ESC.boldOn);
     chunks.push(txt(`${item.qty}x ${item.nameSnapshot}\n`));
     chunks.push(ESC.boldOff);
 
     for (const modifier of item.modifiers ?? []) {
-      chunks.push(ESC.normal);
+      chunks.push(ESC.medium);
       chunks.push(txt(`  + ${modifier.nameSnapshot}\n`));
     }
 
     if (item.notes) {
       const noteLines = item.notes.split("\n").filter(Boolean);
-      chunks.push(ESC.normal);
+      chunks.push(ESC.medium);
       for (const note of noteLines) {
         chunks.push(txt(`  - ${note}\n`));
       }
@@ -176,7 +176,7 @@ export async function printKitchenTicket(order: KitchenOrder) {
     chunks.push(ESC.normal);
     chunks.push(txt("\n"));
     if (i < order.items.length - 1) {
-      chunks.push(line("- "));                       // Dashed, not solid
+      chunks.push(line("-"));
     }
     chunks.push(txt("\n"));
   }

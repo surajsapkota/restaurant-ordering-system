@@ -1,6 +1,5 @@
 import { Router, Request, Response } from "express";
 import net from "net";
-import { printCashierReceiptText } from "../utils/cashierPrinter";
 import prisma from "../db/prisma";
 import { requireAuth } from "../middleware/requireAuth";
 import { formatCashierReceipt, formatCombinedCashierReceipt } from "../utils/receiptFormatter";
@@ -9,6 +8,15 @@ const router = Router();
 
 const PRINTER_IP = "192.168.0.191";
 const PRINTER_PORT = 9100;
+
+async function queueCashierPrint(content: string) {
+  return prisma.printerJob.create({
+    data: {
+      printer: "CASHIER",
+      content,
+    },
+  });
+}
 
 function sendToPrinter(data: Buffer): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -62,7 +70,7 @@ router.get("/test", requireAuth, async (_req: Request, res: Response) => {
 
 router.get("/cashier-test", requireAuth, async (_req: Request, res: Response) => {
   try {
-    await printCashierReceiptText(
+    await queueCashierPrint(
       [
         "BOMBAY TO MUMBAI",
         "------------------------------",
@@ -76,10 +84,10 @@ router.get("/cashier-test", requireAuth, async (_req: Request, res: Response) =>
         "",
       ].join("\n")
     );
-    return res.json({ success: true, message: "Cashier printer test printed" });
+    return res.json({ success: true, message: "Cashier printer test queued" });
   } catch (error) {
-    console.error("Cashier printer test failed:", error);
-    return res.status(500).json({ success: false, message: "Cashier printer test failed" });
+    console.error("Cashier printer test queue failed:", error);
+    return res.status(500).json({ success: false, message: "Cashier printer test could not be queued" });
   }
 });
 
@@ -96,11 +104,11 @@ router.post("/cashier-receipt/:orderId", requireAuth, async (req: Request, res: 
 
     if (!order) return res.status(404).json({ success: false, message: "Order not found" });
 
-    await printCashierReceiptText(formatCashierReceipt(order, { title }));
-    return res.json({ success: true, message: "Cashier receipt printed" });
+    await queueCashierPrint(formatCashierReceipt(order, { title }));
+    return res.json({ success: true, message: "Cashier receipt queued for printing" });
   } catch (error) {
-    console.error("Cashier receipt print failed:", error);
-    return res.status(500).json({ success: false, message: "Cashier receipt print failed" });
+    console.error("Cashier receipt queue failed:", error);
+    return res.status(500).json({ success: false, message: "Cashier receipt could not be queued" });
   }
 });
 
@@ -132,11 +140,11 @@ router.post("/cashier-combined-receipt", requireAuth, async (req: Request, res: 
       .map((id) => foundOrders.find((order) => order.id === id))
       .filter((order): order is (typeof foundOrders)[number] => Boolean(order));
 
-    await printCashierReceiptText(formatCombinedCashierReceipt(sortedOrders));
-    return res.json({ success: true, message: "Combined customer bill printed" });
+    await queueCashierPrint(formatCombinedCashierReceipt(sortedOrders));
+    return res.json({ success: true, message: "Combined customer bill queued for printing" });
   } catch (error) {
-    console.error("Combined cashier receipt print failed:", error);
-    return res.status(500).json({ success: false, message: "Combined bill print failed" });
+    console.error("Combined cashier receipt queue failed:", error);
+    return res.status(500).json({ success: false, message: "Combined bill could not be queued" });
   }
 });
 

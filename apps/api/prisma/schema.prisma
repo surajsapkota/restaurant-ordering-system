@@ -289,3 +289,16 @@ model TableLock {
 
   @@index([expiresAt])
 }
+
+model PrinterJob {
+  id        String   @id @default(cuid())
+  printer   String
+  content   String
+  status    String   @default("PENDING")
+  attempts  Int      @default(0)
+  error     String?
+  createdAt DateTime @default(now())
+  printedAt DateTime?
+
+  @@index([printer, status, createdAt])
+}
